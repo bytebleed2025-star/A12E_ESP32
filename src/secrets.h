@@ -69,10 +69,10 @@
 // ============================================================================
 
 // Relay 1 activation threshold
-#define WEIGHT_THRESHOLD_RELAY1 100.0
+#define WEIGHT_THRESHOLD_RELAY1 3.0
 
 // Relay 2 activation threshold
-#define WEIGHT_THRESHOLD_RELAY2 200.0
+#define WEIGHT_THRESHOLD_RELAY2 5.0
 
 // ============================================================================
 // Buffer Configuration
