@@ -6,6 +6,10 @@
 #include <ArduinoJson.h>
 #include "secrets.h"
 
+// Add these two headers for brownout control
+//#include "soc/soc.h"
+//#include "soc/rtc_cntl_reg.h"
+
 // RS232 Serial initialization
 HardwareSerial RS232Serial(UART_NUM);
 
@@ -282,6 +286,9 @@ void readRS232Data() {
 // ============================================================================
 
 void setup() {
+
+  // Disable brownout detector (diagnostic only!)
+  // WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
   // Initialize debug serial (USB)
   Serial.begin(DEBUG_BAUD_RATE);
   delay(1000);
