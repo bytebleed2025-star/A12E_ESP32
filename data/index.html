@@ -86,8 +86,8 @@
 
     .relay-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 25px;
+      grid-template-columns: 1fr;
+      gap: 20px;
       margin-bottom: 30px;
     }
 
@@ -205,6 +205,116 @@
       color: #bbb;
     }
 
+    .threshold-group {
+      margin-bottom: 15px;
+      text-align: left;
+    }
+
+    .threshold-label {
+      font-size: 12px;
+      color: #999;
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .threshold-input-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .threshold-input {
+      flex: 1;
+      padding: 8px 10px;
+      border: 2px solid #eee;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      text-align: center;
+      outline: none;
+      transition: border-color 0.3s ease;
+      font-family: 'Courier New', monospace;
+      min-width: 0;
+    }
+
+    .threshold-input:focus {
+      border-color: #667eea;
+    }
+
+    .btn-save {
+      padding: 8px 14px;
+      background-color: #667eea;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 12px;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      white-space: nowrap;
+    }
+
+    .btn-save:hover {
+      background-color: #5a6fd6;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    .btn-save:active {
+      transform: translateY(0);
+    }
+
+    .btn-save:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .mode-group {
+      margin-bottom: 12px;
+      text-align: left;
+    }
+
+    .mode-label {
+      font-size: 12px;
+      color: #999;
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .mode-buttons {
+      display: flex;
+      gap: 6px;
+    }
+
+    .mode-btn {
+      flex: 1;
+      padding: 6px 10px;
+      border: 2px solid #ddd;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      transition: all 0.3s ease;
+      background: white;
+      color: #666;
+    }
+
+    .mode-btn.active {
+      border-color: #667eea;
+      background: #667eea;
+      color: white;
+    }
+
+    .mode-btn:hover:not(.active) {
+      border-color: #667eea;
+      color: #667eea;
+    }
+
     .error {
       background-color: #ffebee;
       color: #c62828;
@@ -258,35 +368,61 @@
     </div>
 
     <div class="info-section">
-      🔄 <strong>Auto Mode Active:</strong> Relays activate automatically when weight exceeds threshold. Manual control available via buttons.
+      💡 Each output has its own mode. <strong>Auto</strong>: ON when weight below threshold, OFF when threshold reached. <strong>Manual</strong>: control via buttons.
     </div>
 
     <div class="relay-grid">
       <!-- Relay 1 -->
-      <div class="relay-card">
-        <div class="relay-title">Relay 1</div>
-        <div class="relay-threshold" id="threshold1">Threshold: >100 kg</div>
+      <div class="relay-card" id="relay-card-1">
+        <div class="relay-title">Output 1</div>
+        <div class="mode-group">
+          <label class="mode-label">Mode:</label>
+          <div class="mode-buttons">
+            <button class="mode-btn mode-auto" id="mode1Auto" onclick="setMode(event, 1, 'auto')">Auto</button>
+            <button class="mode-btn mode-manual" id="mode1Manual" onclick="setMode(event, 1, 'manual')">Manual</button>
+          </div>
+        </div>
+        <div class="threshold-group">
+          <label class="threshold-label">Threshold (kg):</label>
+          <div class="threshold-input-row">
+            <input type="number" id="threshold1Input" class="threshold-input" step="0.1" min="0" max="999" placeholder="0.0">
+            <button class="btn-save" onclick="setThreshold(event, 1)">SET</button>
+          </div>
+        </div>
         <div class="status-text">
           <span class="status-indicator" id="relay1Indicator"></span>
           <span id="relay1Text">--</span>
         </div>
         <div class="button-group">
-          <button class="btn-on" onclick="setRelay(1, 1)">ON</button>
-          <button class="btn-off" onclick="setRelay(1, 0)">OFF</button>
+          <button class="btn-on" onclick="setRelay(event, 1, 1)">ON</button>
+          <button class="btn-off" onclick="setRelay(event, 1, 0)">OFF</button>
         </div>
       </div>
 
       <!-- Relay 2 -->
-      <div class="relay-card">
-        <div class="relay-title">Relay 2</div>
-        <div class="relay-threshold" id="threshold2">Threshold: >200 kg</div>
+      <div class="relay-card" id="relay-card-2">
+        <div class="relay-title">Output 2</div>
+        <div class="mode-group">
+          <label class="mode-label">Mode:</label>
+          <div class="mode-buttons">
+            <button class="mode-btn mode-auto" id="mode2Auto" onclick="setMode(event, 2, 'auto')">Auto</button>
+            <button class="mode-btn mode-manual" id="mode2Manual" onclick="setMode(event, 2, 'manual')">Manual</button>
+          </div>
+        </div>
+        <div class="threshold-group">
+          <label class="threshold-label">Threshold (kg):</label>
+          <div class="threshold-input-row">
+            <input type="number" id="threshold2Input" class="threshold-input" step="0.1" min="0" max="999" placeholder="0.0">
+            <button class="btn-save" onclick="setThreshold(event, 2)">SET</button>
+          </div>
+        </div>
         <div class="status-text">
           <span class="status-indicator" id="relay2Indicator"></span>
           <span id="relay2Text">--</span>
         </div>
         <div class="button-group">
-          <button class="btn-on" onclick="setRelay(2, 1)">ON</button>
-          <button class="btn-off" onclick="setRelay(2, 0)">OFF</button>
+          <button class="btn-on" onclick="setRelay(event, 2, 1)">ON</button>
+          <button class="btn-off" onclick="setRelay(event, 2, 0)">OFF</button>
         </div>
       </div>
     </div>
@@ -299,88 +435,122 @@
   </div>
 
   <script>
-    // Configuration
-    const UPDATE_INTERVAL = 1000; // 1 second
-    const API_TIMEOUT = 5000; // 5 seconds
+    const UPDATE_INTERVAL = 1000;
+    const API_TIMEOUT = 5000;
 
-    // State tracking
-    let lastUpdateTime = 0;
     let isConnected = true;
+    let initialized = false;
 
-    /**
-     * Update status from API
-     */
+    function fetchWithTimeout(url, timeout) {
+      const controller = new AbortController();
+      const id = setTimeout(() => controller.abort(), timeout);
+      return fetch(url, { signal: controller.signal }).then(response => {
+        clearTimeout(id);
+        return response;
+      });
+    }
+
     function updateStatus() {
-      fetch('/api/status', { timeout: API_TIMEOUT })
+      fetchWithTimeout('/api/status', API_TIMEOUT)
         .then(response => {
-          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          if (!response.ok) throw new Error('HTTP ' + response.status);
           return response.json();
         })
         .then(data => {
-          // Update weight
           document.getElementById('weight').textContent = data.weight.toFixed(1);
+          updateRelayStatus(1, data.relay1);
+          updateRelayStatus(2, data.relay2);
 
-          // Update Relay 1
-          updateRelayUI(1, data.relay1, data.relay1_threshold);
+          if (!initialized) {
+            initialized = true;
+            updateThresholdInput(1, data.relay1_threshold);
+            updateThresholdInput(2, data.relay2_threshold);
+            updateModeUI(1, data.autoMode1);
+            updateModeUI(2, data.autoMode2);
+          }
 
-          // Update Relay 2
-          updateRelayUI(2, data.relay2, data.relay2_threshold);
-
-          // Clear error and show connected status
           if (!isConnected) {
             document.getElementById('errorBox').style.display = 'none';
             isConnected = true;
-            document.getElementById('connectionStatus').textContent = '● Connected';
+            document.getElementById('connectionStatus').textContent = '\u25cf Connected';
             document.getElementById('connectionStatus').style.color = '#4CAF50';
           }
-
-          lastUpdateTime = Date.now();
         })
         .catch(error => {
           console.error('Error fetching status:', error);
-          
           if (isConnected) {
             isConnected = false;
-            document.getElementById('errorBox').textContent = '⚠️ Connection Error: Unable to reach ESP32';
+            document.getElementById('errorBox').textContent = '\u26a0\ufe0f Connection Error: Unable to reach ESP32';
             document.getElementById('errorBox').style.display = 'block';
-            document.getElementById('connectionStatus').textContent = '● Disconnected';
+            document.getElementById('connectionStatus').textContent = '\u25cf Disconnected';
             document.getElementById('connectionStatus').style.color = '#f44336';
           }
         });
     }
 
-    /**
-     * Update relay UI elements
-     */
-    function updateRelayUI(relayNum, status, threshold) {
-      const indicator = document.getElementById(`relay${relayNum}Indicator`);
-      const text = document.getElementById(`relay${relayNum}Text`);
-      const thresholdEl = document.getElementById(`threshold${relayNum}`);
+    function updateRelayStatus(relayNum, status) {
+      const indicator = document.getElementById('relay' + relayNum + 'Indicator');
+      const text = document.getElementById('relay' + relayNum + 'Text');
 
-      // Update status indicator
       indicator.className = 'status-indicator ' + (status ? 'on' : 'off');
-
-      // Update status text
       text.textContent = status ? 'ON' : 'OFF';
+    }
 
-      // Update threshold display
-      if (threshold) {
-        thresholdEl.textContent = `Threshold: >${threshold} kg`;
+    function updateThresholdInput(relayNum, value) {
+      const input = document.getElementById('threshold' + relayNum + 'Input');
+      if (input && value !== undefined) {
+        input.value = value.toFixed(1);
       }
     }
 
-    /**
-     * Control relay
-     */
-    function setRelay(relay, state) {
+    function updateModeUI(relayNum, isAuto) {
+      const autoBtn = document.getElementById('mode' + relayNum + 'Auto');
+      const manualBtn = document.getElementById('mode' + relayNum + 'Manual');
+      const card = document.getElementById('relay-card-' + relayNum);
+
+      autoBtn.classList.toggle('active', isAuto);
+      manualBtn.classList.toggle('active', !isAuto);
+
+      if (card) {
+        const buttons = card.querySelectorAll('.btn-on, .btn-off');
+        buttons.forEach(function(btn) {
+          btn.disabled = isAuto;
+          btn.style.opacity = isAuto ? '0.4' : '1';
+          btn.style.cursor = isAuto ? 'not-allowed' : 'pointer';
+        });
+      }
+    }
+
+    function setMode(event, relay, mode) {
       const button = event.target;
       button.disabled = true;
       button.style.opacity = '0.6';
 
-      fetch(`/api/relay?relay=${relay}&state=${state}`)
+      fetchWithTimeout('/api/mode?relay=' + relay + '&mode=' + mode, API_TIMEOUT)
         .then(response => response.json())
         .then(data => {
-          updateRelayUI(relay, data[`relay${relay}`]);
+          updateModeUI(relay, data['autoMode' + relay]);
+          updateRelayStatus(relay, data['relay' + relay]);
+        })
+        .catch(function(error) {
+          console.error('Error setting mode:', error);
+          alert('Failed to set mode');
+        })
+        .finally(function() {
+          button.disabled = false;
+          button.style.opacity = '1';
+        });
+    }
+
+    function setRelay(event, relay, state) {
+      const button = event.target;
+      button.disabled = true;
+      button.style.opacity = '0.6';
+
+      fetchWithTimeout('/api/relay?relay=' + relay + '&state=' + state, API_TIMEOUT)
+        .then(response => response.json())
+        .then(data => {
+          updateRelayStatus(relay, data['relay' + relay]);
         })
         .catch(error => {
           console.error('Error setting relay:', error);
@@ -392,9 +562,41 @@
         });
     }
 
-    // Initialize and start auto-refresh
+    function setThreshold(event, relay) {
+      const input = document.getElementById('threshold' + relay + 'Input');
+      const value = parseFloat(input.value);
+
+      if (isNaN(value) || value < 0) {
+        alert('Please enter a valid threshold value');
+        return;
+      }
+
+      const button = event.target;
+      button.disabled = true;
+      button.textContent = '...';
+
+      // Optimistic update — show the new value immediately
+      updateThresholdInput(relay, value);
+
+      fetchWithTimeout('/api/threshold?relay=' + relay + '&value=' + value, API_TIMEOUT)
+        .then(response => response.json())
+        .then(data => {
+          // Confirm with server value
+          updateThresholdInput(relay, data['relay' + relay + '_threshold']);
+          updateRelayStatus(relay, data['relay' + relay]);
+        })
+        .catch(error => {
+          console.error('Error setting threshold:', error);
+          alert('Failed to set threshold');
+        })
+        .finally(() => {
+          button.disabled = false;
+          button.textContent = 'SET';
+        });
+    }
+
     console.log('ESP32 Scale Control UI Loaded');
-    updateStatus(); // Initial update
+    updateStatus();
     setInterval(updateStatus, UPDATE_INTERVAL);
   </script>
 </body>

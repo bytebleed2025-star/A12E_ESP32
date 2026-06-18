@@ -17,8 +17,72 @@ float currentWeight = 0.0;
 bool relay1Status = false;
 bool relay2Status = false;
 
+// Runtime threshold values (adjustable via web UI)
+float thresholdRelay1 = WEIGHT_THRESHOLD_RELAY1;
+float thresholdRelay2 = WEIGHT_THRESHOLD_RELAY2;
+
+// Auto/manual mode per relay (default: auto)
+bool autoMode1 = true;
+bool autoMode2 = true;
+
 // Web server
 AsyncWebServer server(WEB_SERVER_PORT);
+
+// ============================================================================
+// Configuration Persistence
+// ============================================================================
+
+#define CONFIG_FILE "/config.json"
+
+void saveConfig();
+
+void loadConfig() {
+  if (!LittleFS.exists(CONFIG_FILE)) {
+    Serial.println("[CONFIG] No config file found, using defaults");
+    saveConfig();
+    return;
+  }
+
+  File configFile = LittleFS.open(CONFIG_FILE, "r");
+  if (!configFile) {
+    Serial.println("[CONFIG] ERROR: Failed to open config file");
+    return;
+  }
+
+  StaticJsonDocument<256> doc;
+  DeserializationError error = deserializeJson(doc, configFile);
+  if (!error) {
+    if (doc.containsKey("threshold1")) thresholdRelay1 = doc["threshold1"].as<float>();
+    if (doc.containsKey("threshold2")) thresholdRelay2 = doc["threshold2"].as<float>();
+    if (doc.containsKey("autoMode1")) autoMode1 = doc["autoMode1"].as<bool>();
+    if (doc.containsKey("autoMode2")) autoMode2 = doc["autoMode2"].as<bool>();
+    Serial.println("[CONFIG] Loaded thresholds: Relay1=" + String(thresholdRelay1) + "kg, Relay2=" + String(thresholdRelay2) + "kg");
+    Serial.println("[CONFIG] Modes: Relay1=" + String(autoMode1 ? "auto" : "manual") + ", Relay2=" + String(autoMode2 ? "auto" : "manual"));
+  } else {
+    Serial.println("[CONFIG] ERROR: Failed to parse config JSON");
+  }
+
+  configFile.close();
+}
+
+void saveConfig() {
+  StaticJsonDocument<256> doc;
+  doc["threshold1"] = thresholdRelay1;
+  doc["threshold2"] = thresholdRelay2;
+  doc["autoMode1"] = autoMode1;
+  doc["autoMode2"] = autoMode2;
+
+  File configFile = LittleFS.open(CONFIG_FILE, "w");
+  if (!configFile) {
+    Serial.println("[CONFIG] ERROR: Failed to open config file for writing");
+    return;
+  }
+
+  serializeJson(doc, configFile);
+  configFile.close();
+
+  Serial.println("[CONFIG] Saved config");
+}
 
 // ============================================================================
 // Utility Functions
@@ -83,6 +147,9 @@ void initializeLittleFS() {
   
   Serial.println("[FS] LittleFS mounted successfully");
   
+  // Load persisted configuration
+  loadConfig();
+  
   // List files
   File root = LittleFS.open("/");
   File file = root.openNextFile();
@@ -127,12 +194,14 @@ void initializeWiFiAP() {
  * @brief Handle status request - returns JSON with current state
  */
 void handleStatus(AsyncWebServerRequest *request) {
-  StaticJsonDocument<200> doc;
+  StaticJsonDocument<256> doc;
   doc["weight"] = currentWeight;
   doc["relay1"] = relay1Status;
   doc["relay2"] = relay2Status;
-  doc["relay1_threshold"] = WEIGHT_THRESHOLD_RELAY1;
-  doc["relay2_threshold"] = WEIGHT_THRESHOLD_RELAY2;
+  doc["relay1_threshold"] = thresholdRelay1;
+  doc["relay2_threshold"] = thresholdRelay2;
+  doc["autoMode1"] = autoMode1;
+  doc["autoMode2"] = autoMode2;
   
   String response;
   serializeJson(doc, response);
@@ -167,6 +236,65 @@ void handleRelay(AsyncWebServerRequest *request) {
 }
 
 /**
+ * @brief Handle threshold update request
+ * Parameters: relay (1 or 2), value (float in kg)
+ */
+void handleSetThreshold(AsyncWebServerRequest *request) {
+  if (request->hasParam("relay") && request->hasParam("value")) {
+    int relay = request->getParam("relay")->value().toInt();
+    float value = request->getParam("value")->value().toFloat();
+
+    Serial.println("[WEB] Threshold update - Relay: " + String(relay) + ", Value: " + String(value) + " kg");
+
+    if (relay == 1) {
+      thresholdRelay1 = value;
+      Serial.println("[CONFIG] Threshold 1 set to " + String(thresholdRelay1) + " kg");
+    } else if (relay == 2) {
+      thresholdRelay2 = value;
+      Serial.println("[CONFIG] Threshold 2 set to " + String(thresholdRelay2) + " kg");
+    }
+
+    saveConfig();
+  }
+
+  handleStatus(request);
+}
+
+/**
+ * @brief Handle mode switch request
+ * Parameters: relay (1 or 2), mode ("auto" or "manual")
+ */
+void handleSetMode(AsyncWebServerRequest *request) {
+  if (request->hasParam("relay") && request->hasParam("mode")) {
+    int relay = request->getParam("relay")->value().toInt();
+    String mode = request->getParam("mode")->value();
+    bool isAuto = (mode == "auto");
+
+    Serial.println("[WEB] Mode switch - Relay: " + String(relay) + ", Mode: " + mode);
+
+    if (relay == 1) {
+      autoMode1 = isAuto;
+      if (autoMode1) {
+        bool newState = (currentWeight < thresholdRelay1);
+        digitalWrite(RELAY_PIN_1, newState ? HIGH : LOW);
+        relay1Status = newState;
+      }
+    } else if (relay == 2) {
+      autoMode2 = isAuto;
+      if (autoMode2) {
+        bool newState = (currentWeight < thresholdRelay2);
+        digitalWrite(RELAY_PIN_2, newState ? HIGH : LOW);
+        relay2Status = newState;
+      }
+    }
+
+    saveConfig();
+  }
+
+  handleStatus(request);
+}
+
+/**
  * @brief Handle 404 errors
  */
 void handleNotFound(AsyncWebServerRequest *request) {
@@ -180,12 +308,14 @@ void handleNotFound(AsyncWebServerRequest *request) {
 void initializeWebServer() {
   Serial.println("[WEB] Initializing web server...");
   
-  // Serve static files from LittleFS (index.html as default)
-  server.serveStatic("/", LittleFS, "/").setDefaultFile("index.html");
-  
-  // API endpoints
+  // API endpoints (must be registered before static handler)
   server.on("/api/status", HTTP_GET, handleStatus);
   server.on("/api/relay", HTTP_GET, handleRelay);
+  server.on("/api/threshold", HTTP_GET, handleSetThreshold);
+  server.on("/api/mode", HTTP_GET, handleSetMode);
+  
+  // Serve static files from LittleFS (index.html as default)
+  server.serveStatic("/", LittleFS, "/").setDefaultFile("index.html");
   
   // 404 handler
   server.onNotFound(handleNotFound);
@@ -224,22 +354,24 @@ void processFrame(const char *frame) {
     Serial.print(currentWeight);
     Serial.println(" kg");
 
-    // Auto-control relays based on weight thresholds
-    bool newRelay1Status = (currentWeight > WEIGHT_THRESHOLD_RELAY1);
-    bool newRelay2Status = (currentWeight > WEIGHT_THRESHOLD_RELAY2);
-    
-    // Update Relay 1 if status changed
-    if (newRelay1Status != relay1Status) {
-      relay1Status = newRelay1Status;
-      digitalWrite(RELAY_PIN_1, relay1Status ? HIGH : LOW);
-      Serial.println("[RELAYS] Relay 1 auto-activated: " + String(relay1Status ? "ON" : "OFF"));
+    // Auto-control relays based on weight thresholds (only in auto mode)
+    // In auto mode: weight below threshold = ON, weight at/above threshold = OFF
+    if (autoMode1) {
+      bool newRelay1Status = (currentWeight < thresholdRelay1);
+      if (newRelay1Status != relay1Status) {
+        relay1Status = newRelay1Status;
+        digitalWrite(RELAY_PIN_1, relay1Status ? HIGH : LOW);
+        Serial.println("[RELAYS] Relay 1 auto: " + String(relay1Status ? "ON" : "OFF") + " (weight " + String(currentWeight) + "kg, threshold " + String(thresholdRelay1) + "kg)");
+      }
     }
     
-    // Update Relay 2 if status changed
-    if (newRelay2Status != relay2Status) {
-      relay2Status = newRelay2Status;
-      digitalWrite(RELAY_PIN_2, relay2Status ? HIGH : LOW);
-      Serial.println("[RELAYS] Relay 2 auto-activated: " + String(relay2Status ? "ON" : "OFF"));
+    if (autoMode2) {
+      bool newRelay2Status = (currentWeight < thresholdRelay2);
+      if (newRelay2Status != relay2Status) {
+        relay2Status = newRelay2Status;
+        digitalWrite(RELAY_PIN_2, relay2Status ? HIGH : LOW);
+        Serial.println("[RELAYS] Relay 2 auto: " + String(relay2Status ? "ON" : "OFF") + " (weight " + String(currentWeight) + "kg, threshold " + String(thresholdRelay2) + "kg)");
+      }
     }
   }
 }
