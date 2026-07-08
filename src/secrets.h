@@ -15,10 +15,10 @@
 // ============================================================================
 
 // AP SSID (Network Name) - visible to phones
-#define WIFI_SSID "A12E_WEIGH SCALE_DEV1"
+#define WIFI_SSID "A12E_WEIGH SCALE_DEV2"
 
 // AP Password - minimum 8 characters
-#define WIFI_PASSWORD "11111111"
+#define WIFI_PASSWORD "22222222"
 
 // ============================================================================
 // Optional: WiFi Station Mode (if connecting to existing router)
