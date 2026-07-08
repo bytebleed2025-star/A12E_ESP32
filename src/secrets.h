@@ -55,6 +55,14 @@
 // Relay Pin 2 (GPIO17)
 #define RELAY_PIN_2 17
 
+// Manual Mode Latching Push Button (GPIO13)
+// HIGH (button ON/true) → Manual Mode (webpage ON/OFF controls relays)
+#define MANUAL_MODE_PIN 13
+
+// Auto Mode Momentary Push Button (GPIO14)
+// Pressed (HIGH) + MANUAL_MODE_PIN LOW → Auto Mode (weight thresholds control relays)
+#define AUTO_MODE_PIN 14
+
 // RS232 RX Pin (GPIO21)
 #define RS232_RX_PIN 21
 
