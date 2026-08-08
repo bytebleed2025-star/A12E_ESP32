@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.A12EScale" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="colorPrimary">@color/scale_purple</item>
+        <item name="colorPrimaryDark">@color/scale_purple</item>
+        <item name="colorAccent">@color/scale_purple</item>
+        <item name="android:statusBarColor">@color/scale_purple</item>
+    </style>
+</resources>

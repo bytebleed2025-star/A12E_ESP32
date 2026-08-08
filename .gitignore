@@ -62,3 +62,19 @@ Thumbs.db
 *.bin
 *.elf
 *.map
+
+# Android app
+*.apk
+*.aab
+*.ap_
+*.dex
+android-app/.gradle/
+android-app/build/
+android-app/app/build/
+android-app/local.properties
+android-app/.idea/
+android-app/*.iml
+android-app/app/*.iml
+android-app/gti-release.keystore
+android-app/keystore-password.txt
+android-app/keystore.properties

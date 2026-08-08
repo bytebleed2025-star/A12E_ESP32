@@ -1,0 +1,48 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.glorytechnic.a12e'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.glorytechnic.a12e"
+        minSdk 23
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+    }
+
+    signingConfigs {
+        release {
+            def props = new Properties()
+            def propFile = rootProject.file('keystore.properties')
+            if (propFile.exists()) {
+                propFile.withInputStream { props.load(it) }
+            }
+            storeFile rootProject.file(props['storeFile'] ?: 'gti-release.keystore')
+            storePassword props['storePassword'] ?: 'CHANGE_ME'
+            keyAlias props['keyAlias'] ?: 'gti'
+            keyPassword props['keyPassword'] ?: 'CHANGE_ME'
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+    implementation 'com.google.android.material:material:1.12.0'
+}
