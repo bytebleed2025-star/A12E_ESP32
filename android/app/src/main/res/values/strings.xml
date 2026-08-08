@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">A12E Scale</string>
+    <string name="title">TIMBANGAN A12E</string>
+    <string name="subtitle">Controller Dev-ID --</string>
+    <string name="subtitle2">ESP32 IoT Weighing System</string>
+    <string name="weight_label">Timbangan Terukur</string>
+    <string name="weight_unit">kg</string>
+    <string name="output1">Output 1</string>
+    <string name="output2">Output 2</string>
+    <string name="mode_auto">Auto</string>
+    <string name="mode_manual">Manual</string>
+    <string name="threshold_label">Threshold (kg)</string>
+    <string name="set">SET</string>
+    <string name="on">ON</string>
+    <string name="off">OFF</string>
+    <string name="connected">● Connected</string>
+    <string name="disconnected">● Disconnected</string>
+    <string name="connecting">● Connecting…</string>
+    <string name="server_label">Server</string>
+    <string name="server_change">Change</string>
+    <string name="server_hint">ESP32 IP address</string>
+    <string name="cancel">Cancel</string>
+    <string name="ok">OK</string>
+    <string name="error_conn">⚠ Connection Error: Unable to reach ESP32</string>
+    <string name="footer_dev">Develop by GTi_Dev_ShD</string>
+</resources>

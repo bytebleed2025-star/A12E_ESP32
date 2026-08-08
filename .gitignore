@@ -62,3 +62,9 @@ Thumbs.db
 *.bin
 *.elf
 *.map
+
+# Android app (machine-specific / build artifacts)
+android/.gradle/
+android/.idea/
+android/local.properties
+android/*.iml

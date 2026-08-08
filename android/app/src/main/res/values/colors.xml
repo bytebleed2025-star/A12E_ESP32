@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="primary">#667EEA</color>
+    <color name="primary_dark">#5A6FD6</color>
+    <color name="purple">#764BA2</color>
+    <color name="color_gradient_start">#667EEA</color>
+    <color name="color_gradient_end">#764BA2</color>
+    <color name="green">#4CAF50</color>
+    <color name="red">#F44336</color>
+    <color name="white">#FFFFFF</color>
+    <color name="text_primary">#333333</color>
+    <color name="text_secondary">#999999</color>
+    <color name="card_bg">#FAFAFA</color>
+    <color name="info_bg">#F0F4FF</color>
+    <color name="error_bg">#FFEBEE</color>
+    <color name="error_text">#C62828</color>
+    <color name="input_border">#EEEEEE</color>
+</resources>
