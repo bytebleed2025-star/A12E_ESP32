@@ -367,20 +367,20 @@
     </div>
 
     <div class="info-section">
-      💡 Each output has its own mode. <strong>Auto</strong>: ON when weight below threshold, OFF when threshold reached. <strong>Manual</strong>: control via buttons.
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <span style="font-size: 15px; font-weight: 600;">System Mode: <span id="systemModeText" style="color: #667eea;">Auto</span></span>
+        <button id="modeToggleBtn" onclick="toggleSystemMode()" style="padding: 6px 14px; border: 2px solid #667eea; border-radius: 6px; background: white; color: #667eea; font-weight: 600; font-size: 12px; cursor: pointer; text-transform: uppercase; letter-spacing: 1px;">Switch to Manual</button>
+      </div>
+      <p style="font-size: 12px; color: #555;">
+        <strong>Auto</strong>: relays controlled by weight thresholds (GPIO14 momentary PB or webpage).<br>
+        <strong>Manual</strong>: control relays via ON/OFF buttons (GPIO13 latching PB or webpage).
+      </p>
     </div>
 
     <div class="relay-grid">
       <!-- Relay 1 -->
       <div class="relay-card" id="relay-card-1">
         <div class="relay-title">Output 1</div>
-        <div class="mode-group">
-          <label class="mode-label">Mode:</label>
-          <div class="mode-buttons">
-            <button class="mode-btn mode-auto" id="mode1Auto" onclick="setMode(event, 1, 'auto')">Auto</button>
-            <button class="mode-btn mode-manual" id="mode1Manual" onclick="setMode(event, 1, 'manual')">Manual</button>
-          </div>
-        </div>
         <div class="threshold-group">
           <label class="threshold-label">Threshold (kg):</label>
           <div class="threshold-input-row">
@@ -401,13 +401,6 @@
       <!-- Relay 2 -->
       <div class="relay-card" id="relay-card-2">
         <div class="relay-title">Output 2</div>
-        <div class="mode-group">
-          <label class="mode-label">Mode:</label>
-          <div class="mode-buttons">
-            <button class="mode-btn mode-auto" id="mode2Auto" onclick="setMode(event, 2, 'auto')">Auto</button>
-            <button class="mode-btn mode-manual" id="mode2Manual" onclick="setMode(event, 2, 'manual')">Manual</button>
-          </div>
-        </div>
         <div class="threshold-group">
           <label class="threshold-label">Threshold (kg):</label>
           <div class="threshold-input-row">
@@ -465,9 +458,9 @@
             initialized = true;
             updateThresholdInput(1, data.relay1_threshold);
             updateThresholdInput(2, data.relay2_threshold);
-            updateModeUI(1, data.autoMode1);
-            updateModeUI(2, data.autoMode2);
           }
+
+          updateSystemModeUI(data.systemMode);
 
           if (!isConnected) {
             document.getElementById('errorBox').style.display = 'none';
@@ -503,42 +496,49 @@
       }
     }
 
-    function updateModeUI(relayNum, isAuto) {
-      const autoBtn = document.getElementById('mode' + relayNum + 'Auto');
-      const manualBtn = document.getElementById('mode' + relayNum + 'Manual');
-      const card = document.getElementById('relay-card-' + relayNum);
+    function updateSystemModeUI(isManual) {
+      const text = document.getElementById('systemModeText');
+      const toggleBtn = document.getElementById('modeToggleBtn');
+      text.textContent = isManual ? 'Manual' : 'Auto';
+      toggleBtn.textContent = isManual ? 'Switch to Auto' : 'Switch to Manual';
 
-      autoBtn.classList.toggle('active', isAuto);
-      manualBtn.classList.toggle('active', !isAuto);
-
-      if (card) {
-        const buttons = card.querySelectorAll('.btn-on, .btn-off');
-        buttons.forEach(function(btn) {
-          btn.disabled = isAuto;
-          btn.style.opacity = isAuto ? '0.4' : '1';
-          btn.style.cursor = isAuto ? 'not-allowed' : 'pointer';
-        });
+      // Enable/disable ON/OFF buttons based on mode
+      for (let r = 1; r <= 2; r++) {
+        const card = document.getElementById('relay-card-' + r);
+        if (card) {
+          const buttons = card.querySelectorAll('.btn-on, .btn-off');
+          buttons.forEach(function(btn) {
+            btn.disabled = isManual ? false : true;
+            btn.style.opacity = isManual ? '1' : '0.4';
+            btn.style.cursor = isManual ? 'pointer' : 'not-allowed';
+          });
+        }
       }
     }
 
-    function setMode(event, relay, mode) {
-      const button = event.target;
-      button.disabled = true;
-      button.style.opacity = '0.6';
+    function toggleSystemMode() {
+      const text = document.getElementById('systemModeText');
+      const currentMode = text.textContent.toLowerCase();
+      const newMode = currentMode === 'auto' ? 'manual' : 'auto';
 
-      fetchWithTimeout('/api/mode?relay=' + relay + '&mode=' + mode, API_TIMEOUT)
+      const toggleBtn = document.getElementById('modeToggleBtn');
+      toggleBtn.disabled = true;
+      toggleBtn.style.opacity = '0.6';
+
+      fetchWithTimeout('/api/mode?mode=' + newMode, API_TIMEOUT)
         .then(response => response.json())
         .then(data => {
-          updateModeUI(relay, data['autoMode' + relay]);
-          updateRelayStatus(relay, data['relay' + relay]);
+          updateSystemModeUI(data.systemMode);
+          updateRelayStatus(1, data.relay1);
+          updateRelayStatus(2, data.relay2);
         })
         .catch(function(error) {
           console.error('Error setting mode:', error);
-          alert('Failed to set mode');
+          alert('Failed to set system mode');
         })
         .finally(function() {
-          button.disabled = false;
-          button.style.opacity = '1';
+          toggleBtn.disabled = false;
+          toggleBtn.style.opacity = '1';
         });
     }
 

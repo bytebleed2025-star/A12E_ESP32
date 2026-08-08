@@ -25,9 +25,20 @@ bool relay2Status = false;
 float thresholdRelay1 = WEIGHT_THRESHOLD_RELAY1;
 float thresholdRelay2 = WEIGHT_THRESHOLD_RELAY2;
 
-// Auto/manual mode per relay (default: auto)
-bool autoMode1 = true;
-bool autoMode2 = true;
+// Global system mode: true = Manual (webpage ON/OFF controls relays), false = Auto
+bool systemManualMode = false;
+
+// Auto cycle: true when GPIO 14 starts the cycle in Auto mode, false when stopped
+bool autoCycleActive = false;
+
+// Physical button debounce state
+static int lastStable13 = HIGH;
+static int lastStable14 = HIGH;
+static int lastRead13 = HIGH;
+static int lastRead14 = HIGH;
+static unsigned long lastDebounce13 = 0;
+static unsigned long lastDebounce14 = 0;
+const unsigned long debounceDelay = 50;
 
 // Web server
 AsyncWebServer server(WEB_SERVER_PORT);
@@ -58,10 +69,9 @@ void loadConfig() {
   if (!error) {
     if (doc.containsKey("threshold1")) thresholdRelay1 = doc["threshold1"].as<float>();
     if (doc.containsKey("threshold2")) thresholdRelay2 = doc["threshold2"].as<float>();
-    if (doc.containsKey("autoMode1")) autoMode1 = doc["autoMode1"].as<bool>();
-    if (doc.containsKey("autoMode2")) autoMode2 = doc["autoMode2"].as<bool>();
+    if (doc.containsKey("systemManualMode")) systemManualMode = doc["systemManualMode"].as<bool>();
     Serial.println("[CONFIG] Loaded thresholds: Relay1=" + String(thresholdRelay1) + "kg, Relay2=" + String(thresholdRelay2) + "kg");
-    Serial.println("[CONFIG] Modes: Relay1=" + String(autoMode1 ? "auto" : "manual") + ", Relay2=" + String(autoMode2 ? "auto" : "manual"));
+    Serial.println("[CONFIG] System mode: " + String(systemManualMode ? "Manual" : "Auto"));
   } else {
     Serial.println("[CONFIG] ERROR: Failed to parse config JSON");
   }
@@ -73,8 +83,7 @@ void saveConfig() {
   StaticJsonDocument<256> doc;
   doc["threshold1"] = thresholdRelay1;
   doc["threshold2"] = thresholdRelay2;
-  doc["autoMode1"] = autoMode1;
-  doc["autoMode2"] = autoMode2;
+  doc["systemManualMode"] = systemManualMode;
 
   File configFile = LittleFS.open(CONFIG_FILE, "w");
   if (!configFile) {
@@ -126,6 +135,26 @@ void initializeRelays() {
   
   Serial.println("[RELAYS] Relay 1 (GPIO" + String(RELAY_PIN_1) + ") - OFF");
   Serial.println("[RELAYS] Relay 2 (GPIO" + String(RELAY_PIN_2) + ") - OFF");
+}
+
+/**
+ * @brief Initialize physical mode input pins
+ * GPIO 13 = Latching PB for Manual Mode (INPUT_PULLUP, active LOW)
+ * GPIO 14 = Momentary PB for Auto Mode (INPUT_PULLUP, active LOW)
+ */
+void initializeModeInputs() {
+  Serial.println("[MODE] Initializing mode input pins...");
+  pinMode(MANUAL_MODE_PIN, INPUT_PULLUP);
+  pinMode(AUTO_MODE_PIN, INPUT_PULLUP);
+  // Initialize stable states
+  lastStable13 = digitalRead(MANUAL_MODE_PIN);
+  lastStable14 = digitalRead(AUTO_MODE_PIN);
+  lastRead13 = lastStable13;
+  lastRead14 = lastStable14;
+  Serial.print("[MODE] Manual PB (GPIO" + String(MANUAL_MODE_PIN) + ") state: ");
+  Serial.println(lastStable13 == LOW ? "ON (LOW)" : "OFF (HIGH)");
+  Serial.print("[MODE] Auto PB (GPIO" + String(AUTO_MODE_PIN) + ") state: ");
+  Serial.println(lastStable14 == LOW ? "ON (LOW)" : "OFF (HIGH)");
 }
 
 /**
@@ -204,8 +233,7 @@ void handleStatus(AsyncWebServerRequest *request) {
   doc["relay2"] = relay2Status;
   doc["relay1_threshold"] = thresholdRelay1;
   doc["relay2_threshold"] = thresholdRelay2;
-  doc["autoMode1"] = autoMode1;
-  doc["autoMode2"] = autoMode2;
+  doc["systemMode"] = systemManualMode;
   
   String response;
   serializeJson(doc, response);
@@ -221,6 +249,12 @@ void handleRelay(AsyncWebServerRequest *request) {
   if (request->hasParam("relay") && request->hasParam("state")) {
     int relay = request->getParam("relay")->value().toInt();
     int state = request->getParam("state")->value().toInt();
+    
+    if (!systemManualMode) {
+      Serial.println("[WEB] Relay control rejected - system is in AUTO mode");
+      handleStatus(request);
+      return;
+    }
     
     Serial.println("[WEB] Relay control request - Relay: " + String(relay) + ", State: " + String(state));
     
@@ -266,30 +300,29 @@ void handleSetThreshold(AsyncWebServerRequest *request) {
 
 /**
  * @brief Handle mode switch request
- * Parameters: relay (1 or 2), mode ("auto" or "manual")
+ * Parameters: mode ("manual" or "auto") controls global system mode
  */
 void handleSetMode(AsyncWebServerRequest *request) {
-  if (request->hasParam("relay") && request->hasParam("mode")) {
-    int relay = request->getParam("relay")->value().toInt();
+  if (request->hasParam("mode")) {
     String mode = request->getParam("mode")->value();
-    bool isAuto = (mode == "auto");
+    bool manual = (mode == "manual");
 
-    Serial.println("[WEB] Mode switch - Relay: " + String(relay) + ", Mode: " + mode);
+    Serial.println("[WEB] System mode switch: " + mode);
 
-    if (relay == 1) {
-      autoMode1 = isAuto;
-      if (autoMode1) {
-        bool newState = (currentWeight < thresholdRelay1);
-        digitalWrite(RELAY_PIN_1, newState ? HIGH : LOW);
-        relay1Status = newState;
+    systemManualMode = manual;
+
+    if (!systemManualMode) {
+      // Entering Auto Mode → reset cycle, relays OFF
+      autoCycleActive = false;
+      if (relay1Status) {
+        relay1Status = false;
+        digitalWrite(RELAY_PIN_1, LOW);
       }
-    } else if (relay == 2) {
-      autoMode2 = isAuto;
-      if (autoMode2) {
-        bool newState = (currentWeight < thresholdRelay2);
-        digitalWrite(RELAY_PIN_2, newState ? HIGH : LOW);
-        relay2Status = newState;
+      if (relay2Status) {
+        relay2Status = false;
+        digitalWrite(RELAY_PIN_2, LOW);
       }
+      Serial.println("[MODE] Auto Mode entered — cycle reset, relays OFF");
     }
 
     saveConfig();
@@ -358,24 +391,22 @@ void processFrame(const char *frame) {
     Serial.print(currentWeight);
     Serial.println(" kg");
 
-    // Auto-control relays based on weight thresholds (only in auto mode)
-    // In auto mode: weight below threshold = ON, weight at/above threshold = OFF
-    if (autoMode1) {
-      bool newRelay1Status = (currentWeight < thresholdRelay1);
-      if (newRelay1Status != relay1Status) {
-        relay1Status = newRelay1Status;
-        digitalWrite(RELAY_PIN_1, relay1Status ? HIGH : LOW);
-        Serial.println("[RELAYS] Relay 1 auto: " + String(relay1Status ? "ON" : "OFF") + " (weight " + String(currentWeight) + "kg, threshold " + String(thresholdRelay1) + "kg)");
+    // Auto-cycle stop check: if running and weight reaches threshold → relay OFF
+    if (!systemManualMode && autoCycleActive) {
+      bool stopped = false;
+      if (relay1Status && currentWeight >= thresholdRelay1) {
+        relay1Status = false;
+        digitalWrite(RELAY_PIN_1, LOW);
+        stopped = true;
+        Serial.println("[RELAYS] Relay 1 auto STOP (weight " + String(currentWeight) + "kg >= " + String(thresholdRelay1) + "kg)");
       }
-    }
-    
-    if (autoMode2) {
-      bool newRelay2Status = (currentWeight < thresholdRelay2);
-      if (newRelay2Status != relay2Status) {
-        relay2Status = newRelay2Status;
-        digitalWrite(RELAY_PIN_2, relay2Status ? HIGH : LOW);
-        Serial.println("[RELAYS] Relay 2 auto: " + String(relay2Status ? "ON" : "OFF") + " (weight " + String(currentWeight) + "kg, threshold " + String(thresholdRelay2) + "kg)");
+      if (relay2Status && currentWeight >= thresholdRelay2) {
+        relay2Status = false;
+        digitalWrite(RELAY_PIN_2, LOW);
+        stopped = true;
+        Serial.println("[RELAYS] Relay 2 auto STOP (weight " + String(currentWeight) + "kg >= " + String(thresholdRelay2) + "kg)");
       }
+      if (stopped) autoCycleActive = false;
     }
   }
 }
@@ -414,6 +445,93 @@ void readRS232Data() {
 }
 
 // ============================================================================
+// Physical Mode Input Processing
+// ============================================================================
+
+/**
+ * @brief Read and process physical mode buttons
+ * GPIO 13 (latching PB, active LOW): ON → Manual Mode, OFF → Auto Mode (cycle reset)
+ * GPIO 14 (momentary PB, active LOW): in Auto Mode → start cycle (relays ON)
+ * 
+ * Uses debounce with 50ms delay. System mode can also be changed via webpage.
+ */
+void readModeInputs() {
+  unsigned long now = millis();
+
+  // --- GPIO 13 (Latching PB for Manual Mode) ---
+  int r13 = digitalRead(MANUAL_MODE_PIN);
+  if (r13 != lastRead13) lastDebounce13 = now;
+  lastRead13 = r13;
+
+  if (now - lastDebounce13 > debounceDelay) {
+    if (r13 != lastStable13) {
+      if (r13 == LOW) {
+        // Latching PB turned ON → Manual Mode, relays ON
+        if (!systemManualMode) {
+          systemManualMode = true;
+          autoCycleActive = false;
+          relay1Status = true;
+          relay2Status = true;
+          digitalWrite(RELAY_PIN_1, HIGH);
+          digitalWrite(RELAY_PIN_2, HIGH);
+          Serial.println("[MODE] Manual Mode (latching PB ON) — relays ON");
+          saveConfig();
+        }
+      } else {
+        // Latching PB turned OFF → Auto Mode, reset cycle, relays OFF
+        if (systemManualMode) {
+          systemManualMode = false;
+          autoCycleActive = false;
+          if (relay1Status) {
+            relay1Status = false;
+            digitalWrite(RELAY_PIN_1, LOW);
+          }
+          if (relay2Status) {
+            relay2Status = false;
+            digitalWrite(RELAY_PIN_2, LOW);
+          }
+          Serial.println("[MODE] Auto Mode (latching PB OFF) — cycle reset, relays OFF");
+          saveConfig();
+        }
+      }
+      lastStable13 = r13;
+    }
+  }
+
+  // --- GPIO 14 (Momentary PB: start cycle in Auto Mode) ---
+  if (!systemManualMode) {
+    int r14 = digitalRead(AUTO_MODE_PIN);
+    if (r14 != lastRead14) lastDebounce14 = now;
+    lastRead14 = r14;
+
+    if (now - lastDebounce14 > debounceDelay) {
+      if (r14 != lastStable14) {
+        if (r14 == LOW) {
+          // Momentary PB pressed in Auto Mode → start cycle (relays ON)
+          if (!autoCycleActive) {
+            autoCycleActive = true;
+            relay1Status = true;
+            relay2Status = true;
+            digitalWrite(RELAY_PIN_1, HIGH);
+            digitalWrite(RELAY_PIN_2, HIGH);
+            Serial.println("[MODE] Auto cycle START (GPIO14 pressed) — relays ON");
+          } else {
+            // If already running, pressing again restarts
+            autoCycleActive = true;
+            relay1Status = true;
+            relay2Status = true;
+            digitalWrite(RELAY_PIN_1, HIGH);
+            digitalWrite(RELAY_PIN_2, HIGH);
+            Serial.println("[MODE] Auto cycle RESTART (GPIO14 pressed) — relays ON");
+          }
+        }
+        lastStable14 = r14;
+      }
+    }
+  }
+}
+
+// ============================================================================
 // Setup and Loop
 // ============================================================================
 
@@ -430,6 +548,7 @@ void setup() {
   
   // Initialize hardware
   initializeRelays();
+  initializeModeInputs();
   initializeRS232();
   initializeLittleFS();
   initializeWiFiAP();
@@ -441,6 +560,9 @@ void setup() {
 void loop() {
   // Read and process RS232 data (non-blocking)
   readRS232Data();
+  
+  // Read physical mode buttons (non-blocking debounce)
+  readModeInputs();
   
   // Small delay to prevent watchdog issues
   delay(1);
