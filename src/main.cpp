@@ -139,8 +139,10 @@ void initializeRelays() {
 
 /**
  * @brief Initialize physical mode input pins
- * GPIO 13 = Latching PB for Manual Mode (INPUT_PULLUP, active LOW)
- * GPIO 14 = Momentary PB for Auto Mode (INPUT_PULLUP, active LOW)
+ * GPIO 13 = Mode Select Switch (INPUT_PULLUP, active LOW)
+ *   LOW  = Manual Mode (webpage ON/OFF controls relays)
+ *   HIGH = Auto Mode (weight thresholds control relays)
+ * GPIO 14 = Momentary PB for Auto cycle start (INPUT_PULLUP, active LOW)
  */
 void initializeModeInputs() {
   Serial.println("[MODE] Initializing mode input pins...");
@@ -151,10 +153,15 @@ void initializeModeInputs() {
   lastStable14 = digitalRead(AUTO_MODE_PIN);
   lastRead13 = lastStable13;
   lastRead14 = lastStable14;
+
+  // Sync mode with actual GPIO13 state (overrides saved config)
+  systemManualMode = (lastStable13 == LOW);
+
   Serial.print("[MODE] Manual PB (GPIO" + String(MANUAL_MODE_PIN) + ") state: ");
   Serial.println(lastStable13 == LOW ? "ON (LOW)" : "OFF (HIGH)");
   Serial.print("[MODE] Auto PB (GPIO" + String(AUTO_MODE_PIN) + ") state: ");
   Serial.println(lastStable14 == LOW ? "ON (LOW)" : "OFF (HIGH)");
+  Serial.println("[MODE] Mode from GPIO13: " + String(systemManualMode ? "Manual" : "Auto"));
 }
 
 /**
@@ -299,8 +306,9 @@ void handleSetThreshold(AsyncWebServerRequest *request) {
 }
 
 /**
- * @brief Handle mode switch request
- * Parameters: mode ("manual" or "auto") controls global system mode
+ * @brief Handle mode switch request (web API)
+ * Parameters: mode ("manual" or "auto")
+ * Turns relays OFF on any mode switch.
  */
 void handleSetMode(AsyncWebServerRequest *request) {
   if (request->hasParam("mode")) {
@@ -310,20 +318,18 @@ void handleSetMode(AsyncWebServerRequest *request) {
     Serial.println("[WEB] System mode switch: " + mode);
 
     systemManualMode = manual;
+    autoCycleActive = false;
 
-    if (!systemManualMode) {
-      // Entering Auto Mode → reset cycle, relays OFF
-      autoCycleActive = false;
-      if (relay1Status) {
-        relay1Status = false;
-        digitalWrite(RELAY_PIN_1, LOW);
-      }
-      if (relay2Status) {
-        relay2Status = false;
-        digitalWrite(RELAY_PIN_2, LOW);
-      }
-      Serial.println("[MODE] Auto Mode entered — cycle reset, relays OFF");
+    // Turn relays OFF when switching modes
+    if (relay1Status || relay2Status) {
+      relay1Status = false;
+      relay2Status = false;
+      digitalWrite(RELAY_PIN_1, LOW);
+      digitalWrite(RELAY_PIN_2, LOW);
+      Serial.println("[RELAYS] Both relays OFF (mode switch)");
     }
+
+    Serial.println("[MODE] " + String(systemManualMode ? "Manual" : "Auto") + " Mode (web)");
 
     saveConfig();
   }
@@ -450,51 +456,41 @@ void readRS232Data() {
 
 /**
  * @brief Read and process physical mode buttons
- * GPIO 13 (latching PB, active LOW): ON → Manual Mode, OFF → Auto Mode (cycle reset)
+ * GPIO 13 (Mode Select Switch, active LOW): LOW → Manual, HIGH → Auto
+ *   On mode switch: relays turn OFF, cycle reset
  * GPIO 14 (momentary PB, active LOW): in Auto Mode → start cycle (relays ON)
  * 
- * Uses debounce with 50ms delay. System mode can also be changed via webpage.
+ * Uses debounce with 50ms delay.
  */
 void readModeInputs() {
   unsigned long now = millis();
 
-  // --- GPIO 13 (Latching PB for Manual Mode) ---
+  // --- GPIO 13 (Mode Select: LOW = Manual, HIGH = Auto) ---
   int r13 = digitalRead(MANUAL_MODE_PIN);
   if (r13 != lastRead13) lastDebounce13 = now;
   lastRead13 = r13;
 
   if (now - lastDebounce13 > debounceDelay) {
     if (r13 != lastStable13) {
-      if (r13 == LOW) {
-        // Latching PB turned ON → Manual Mode, relays ON
-        if (!systemManualMode) {
-          systemManualMode = true;
-          autoCycleActive = false;
-          relay1Status = true;
-          relay2Status = true;
-          digitalWrite(RELAY_PIN_1, HIGH);
-          digitalWrite(RELAY_PIN_2, HIGH);
-          Serial.println("[MODE] Manual Mode (latching PB ON) — relays ON");
-          saveConfig();
-        }
-      } else {
-        // Latching PB turned OFF → Auto Mode, reset cycle, relays OFF
-        if (systemManualMode) {
-          systemManualMode = false;
-          autoCycleActive = false;
-          if (relay1Status) {
-            relay1Status = false;
-            digitalWrite(RELAY_PIN_1, LOW);
-          }
-          if (relay2Status) {
-            relay2Status = false;
-            digitalWrite(RELAY_PIN_2, LOW);
-          }
-          Serial.println("[MODE] Auto Mode (latching PB OFF) — cycle reset, relays OFF");
-          saveConfig();
-        }
-      }
       lastStable13 = r13;
+
+      bool newManualMode = (r13 == LOW);
+      if (newManualMode != systemManualMode) {
+        systemManualMode = newManualMode;
+        autoCycleActive = false;
+
+        // Turn relays OFF when switching modes
+        if (relay1Status || relay2Status) {
+          relay1Status = false;
+          relay2Status = false;
+          digitalWrite(RELAY_PIN_1, LOW);
+          digitalWrite(RELAY_PIN_2, LOW);
+          Serial.println("[RELAYS] Both relays OFF (mode switch)");
+        }
+
+        Serial.println("[MODE] " + String(systemManualMode ? "Manual" : "Auto") + " Mode (GPIO13)");
+        saveConfig();
+      }
     }
   }
 
@@ -507,23 +503,12 @@ void readModeInputs() {
     if (now - lastDebounce14 > debounceDelay) {
       if (r14 != lastStable14) {
         if (r14 == LOW) {
-          // Momentary PB pressed in Auto Mode → start cycle (relays ON)
-          if (!autoCycleActive) {
-            autoCycleActive = true;
-            relay1Status = true;
-            relay2Status = true;
-            digitalWrite(RELAY_PIN_1, HIGH);
-            digitalWrite(RELAY_PIN_2, HIGH);
-            Serial.println("[MODE] Auto cycle START (GPIO14 pressed) — relays ON");
-          } else {
-            // If already running, pressing again restarts
-            autoCycleActive = true;
-            relay1Status = true;
-            relay2Status = true;
-            digitalWrite(RELAY_PIN_1, HIGH);
-            digitalWrite(RELAY_PIN_2, HIGH);
-            Serial.println("[MODE] Auto cycle RESTART (GPIO14 pressed) — relays ON");
-          }
+          autoCycleActive = true;
+          relay1Status = true;
+          relay2Status = true;
+          digitalWrite(RELAY_PIN_1, HIGH);
+          digitalWrite(RELAY_PIN_2, HIGH);
+          Serial.println("[MODE] Auto cycle START (GPIO14)");
         }
         lastStable14 = r14;
       }
@@ -548,9 +533,9 @@ void setup() {
   
   // Initialize hardware
   initializeRelays();
-  initializeModeInputs();
-  initializeRS232();
   initializeLittleFS();
+  initializeModeInputs();   // After LittleFS — GPIO13 state overrides saved mode
+  initializeRS232();
   initializeWiFiAP();
   initializeWebServer();
   

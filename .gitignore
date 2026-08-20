@@ -63,7 +63,7 @@ Thumbs.db
 *.elf
 *.map
 
-# Android app
+# Android app (WebView)
 *.apk
 *.aab
 *.ap_
@@ -78,3 +78,9 @@ android-app/app/*.iml
 android-app/gti-release.keystore
 android-app/keystore-password.txt
 android-app/keystore.properties
+
+# Android app (Native)
+android/.gradle/
+android/.idea/
+android/local.properties
+android/*.iml
