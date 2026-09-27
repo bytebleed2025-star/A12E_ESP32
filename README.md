@@ -147,6 +147,9 @@ pio device monitor
 
 ## API Endpoints
 
+All endpoints are `GET`, unauthenticated, and only reachable from the AP
+network. Every one of them returns the same status JSON as the body.
+
 ### GET `/api/status`
 Returns current system state:
 ```json
@@ -155,16 +158,36 @@ Returns current system state:
   "relay1": false,
   "relay2": false,
   "relay1_threshold": 100.0,
-  "relay2_threshold": 200.0
+  "relay2_threshold": 200.0,
+  "systemMode": false
 }
 ```
+
+`systemMode` is `true` for Manual, `false` for Auto. Note that on boot this
+reflects the **SW1 switch position**, which overrides the persisted value.
 
 ### GET `/api/relay?relay=1&state=1`
 Control relay:
 - `relay`: 1 or 2
 - `state`: 0 (OFF) or 1 (ON)
 
-Returns same as `/api/status`
+⚠ Rejected while the system is in Auto mode — the status is returned unchanged
+and the request is ignored. Switch SW1 to Manual first.
+
+### GET `/api/threshold?relay=1&value=25.5`
+Set a weight threshold in kg:
+- `relay`: 1 or 2
+- `value`: threshold in kg (float)
+
+Persisted to `/config.json` immediately. Works in either mode.
+
+### GET `/api/mode?mode=auto`
+Switch mode from the web UI:
+- `mode`: `manual` or `auto`
+
+Turns both relays OFF and clears the auto cycle, then persists to
+`config.json`. **SW1 remains authoritative at the next boot** — use the physical
+switch to select a mode you want to stick.
 
 ## Serial Output Example
 
@@ -181,18 +204,24 @@ Free Heap: 180 KB
 [RELAYS] Initializing relay pins...
 [RELAYS] Relay 1 (GPIO16) - OFF
 [RELAYS] Relay 2 (GPIO17) - OFF
+[FS] Mounting LittleFS...
+[FS] LittleFS mounted successfully
+[CONFIG] Loaded thresholds: Relay1=20.0kg, Relay2=200.0kg
+[CONFIG] System mode: Auto
+[FS] Files in LittleFS:
+     - index.html (8945 bytes)
+[MODE] Initializing mode input pins...
+[MODE] Manual PB (GPIO13) state: OFF (HIGH)
+[MODE] Auto PB (GPIO14) state: OFF (HIGH)
+[MODE] Mode from GPIO13: Auto
 [RS232] Initializing RS232 communication...
 [RS232] Baud Rate: 9600
 [RS232] RX Pin: GPIO21
 [RS232] TX Pin: GPIO22
-[FS] Mounting LittleFS...
-[FS] LittleFS mounted successfully
-[FS] Files in LittleFS:
-     - index.html (8945 bytes)
 [WiFi] Setting up Access Point...
 [WiFi] Access Point started successfully!
-[WiFi] SSID: ESP32_Scale
-[WiFi] Password: 12345678
+[WiFi] SSID: A12E_WEIGH SCALE_DEV2
+[WiFi] Password: ********
 [WiFi] IP Address: 192.168.4.1
 [WiFi] Connect your phone to WiFi and open http://192.168.4.1
 [WEB] Initializing web server...
@@ -200,9 +229,12 @@ Free Heap: 180 KB
 [SYSTEM] Setup complete - System ready!
 
 [SCALE] Weight: 75.3 kg
-[RELAYS] Relay 1 auto-activated: OFF
-[RELAYS] Relay 2 auto-activated: OFF
-
+[MODE] Auto cycle START (GPIO14)
+[RELAYS] Relay 1 auto STOP (weight 240kg >= 20kg)
+[RELAYS] Relay 2 auto STOP (weight 240kg >= 200kg)
+[MODE] Manual Mode (GPIO13)
+[RELAYS] Both relays OFF (mode switch)
+[CONFIG] Saved config
 [WEB] Relay control request - Relay: 1, State: 1
 [RELAYS] Relay 1 turned ON
 ```
