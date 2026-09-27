@@ -12,10 +12,21 @@ A12E_ESP32/
 │   └── main.cpp            # Main firmware
 ├── data/
 │   └── index.html          # Web UI (served from LittleFS)
+├── docs/
+│   └── schematic.svg       # Full wiring schematic (open in any browser)
 ├── platformio.ini          # PlatformIO configuration
 ├── .gitignore              # Git ignore file
 └── README.md              # This file
 ```
+
+## Hardware Schematic
+
+![Wiring schematic](docs/schematic.svg)
+
+Full wiring diagram: [`docs/schematic.svg`](docs/schematic.svg) — open it in any
+browser, or drop it straight into an Inkscape / Illustrator / KiCad canvas.
+It covers the ESP32 pin map, relay modules, mode push buttons, the MAX232
+RS232 level shifter, the DB9 scale port and the 5 V power rails.
 
 ## Features
 
@@ -25,19 +36,51 @@ A12E_ESP32/
 ✅ **Real-time Updates** - 1-second refresh rate  
 ✅ **Auto Relay Control** - Automatic activation based on weight  
 ✅ **Manual Relay Control** - Override via web interface  
+✅ **Physical Mode Switch** - Manual / Auto selector and cycle-start button  
+✅ **Config Persistence** - Thresholds and mode saved to LittleFS  
 ✅ **RS232 Serial Communication** - Weight reading from scale  
 ✅ **Responsive UI** - Works on mobile and desktop  
 ✅ **Error Handling** - Connection monitoring  
 ✅ **Debug Logging** - Detailed serial output  
 
+## Operating Modes
+
+The mode is set by **SW1 (GPIO13)**, not by the web UI. On boot the physical
+switch position wins over the value saved in `config.json`.
+
+| SW1 (GPIO13) | Mode | Relay control |
+|--------------|------|---------------|
+| LOW (pressed) | **Manual** | Web UI ON/OFF buttons (`/api/relay`) |
+| HIGH (released) | **Auto** | Weight thresholds from the scale |
+
+In **Auto** mode, pressing **SW2 (GPIO14)** starts a cycle: both relays turn ON
+and stay ON until the scale reports a weight at or above the matching
+threshold, which switches that relay off again. Switching modes always forces
+both relays OFF.
+
 ## Hardware Requirements
 
 - **ESP32 DevKit v1** (or similar)
-- **2x Relay Module** (GPIO16, GPIO17)
-- **RS232 Serial Scale** (connected to UART1)
-  - RX: GPIO21
-  - TX: GPIO22
-- **USB Cable** (for power and serial communication)
+- **2x 5 V low-level-trigger relay module** (IN: GPIO16, GPIO17)
+  - Must be the *low-level trigger* type so a 3.3 V HIGH energises it
+  - Contacts are dry (COM / NO / NC) and switch the load side, not the logic
+- **2x push button** — both to GND, active LOW, using the ESP32 internal pull-up
+  - SW1 — latching / toggle: mode select (GPIO13)
+  - SW2 — momentary: start auto cycle (GPIO14)
+- **MAX232** RS232 transceiver, DIP-16, + 6x 0.1 µF ceramic capacitors
+  - ESP32 RX (GPIO21) ← pin 1 (R1OUT)
+  - ESP32 TX (GPIO22) → pin 2 (R1IN)
+  - pins 6/7 (NOUT1) → DB9 pin 2 (scale RxD)
+  - pins 3/4 (RIN1) → DB9 pin 3 (scale TxD)
+  - pin 10 → GND
+- **RS232 serial scale** with a DB9 female port
+- **DB9 female connector** + shielded twisted-pair cable
+- **5 V / 2 A DC supply** — feed the ESP32 `5V/VIN` pin from this, not from USB
+  - Powers the ESP32, both relay modules and the MAX232
+  - All grounds common; never tie GND to AC neutral
+- **USB cable** — flashing and serial monitor only (do not power simultaneously)
+
+See [`docs/schematic.svg`](docs/schematic.svg) for the full wiring diagram.
 
 ## Setup Instructions
 
@@ -49,7 +92,11 @@ A12E_ESP32/
 - PlatformIO IDE
 ```
 
-### 2. Configure Hardware (Edit `include/secrets.h`)
+### 2. Configure Hardware (Edit `src/secrets.h`)
+
+`src/secrets.h` is the file the firmware actually reads — `main.cpp` includes
+`"secrets.h"` and the compiler resolves it from `src/` first. The copy in
+`include/` is unused.
 
 ```cpp
 // WiFi AP Settings
@@ -57,15 +104,21 @@ A12E_ESP32/
 #define WIFI_PASSWORD "12345678"
 
 // Pin Configuration
-#define RELAY_PIN_1 16          // GPIO16
-#define RELAY_PIN_2 17          // GPIO17
-#define RS232_RX_PIN 21         // GPIO21
-#define RS232_TX_PIN 22         // GPIO22
+#define RELAY_PIN_1 16          // GPIO16 -> Relay 1 IN
+#define RELAY_PIN_2 17          // GPIO17 -> Relay 2 IN
+#define MANUAL_MODE_PIN 13      // GPIO13 -> SW1, active LOW (HIGH = Auto)
+#define AUTO_MODE_PIN 14        // GPIO14 -> SW2, active LOW, momentary
+#define RS232_RX_PIN 21         // GPIO21 -> MAX232 pin 1 (R1OUT)
+#define RS232_TX_PIN 22         // GPIO22 -> MAX232 pin 2 (R1IN)
 
 // Weight Thresholds (kg)
 #define WEIGHT_THRESHOLD_RELAY1 100.0
 #define WEIGHT_THRESHOLD_RELAY2 200.0
 ```
+
+Thresholds and mode are persisted to `/config.json` in LittleFS at runtime and
+can be changed from the web UI, so editing these values only sets the
+power-on defaults for a freshly erased filesystem.
 
 ### 3. Build and Upload
 

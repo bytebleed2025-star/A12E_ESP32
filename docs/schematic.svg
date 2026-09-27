@@ -66,7 +66,7 @@
 
   <rect class="sub" x="476" y="162" width="338" height="100" rx="5"/>
   <text class="btxt" x="488" y="184">K1 · Relay 1 — 5 V module, active HIGH</text>
-  <path class="sig" d="M390 190 H446 V206 H512"/>
+  <path class="sig" d="M390 190 H436 V206 H512"/>
   <circle class="term" cx="512" cy="206" r="3.5"/>
   <text class="mono" x="520" y="210">GPIO16</text>
   <circle class="term" cx="814" cy="196" r="3.5"/><text class="mono8" x="806" y="200" text-anchor="end">VCC +5 V</text>
@@ -108,7 +108,7 @@
   <rect class="sub" x="476" y="534" width="338" height="80" rx="5"/>
   <text class="btxt" x="488" y="554">SW2 · Auto-cycle start (momentary)</text>
   <text class="mut" x="500" y="574">GPIO14</text>
-  <path class="sig" d="M390 450 H430 V586 H512"/>
+  <path class="sig" d="M390 450 H440 V586 H512"/>
   <circle class="term" cx="512" cy="586" r="3.5"/>
   <path class="sig" d="M515 579 L553 593"/>
   <circle cx="512" cy="586" r="3.2" fill="#fff" stroke="#1d4ed8" stroke-width="1.6"/>
@@ -129,12 +129,12 @@
 
   <rect class="sub" x="476" y="696" width="338" height="190" rx="5"/>
 
-  <path class="sig" d="M390 580 H446 V730 H512"/>
+  <path class="sig" d="M390 580 H434 V730 H512"/>
   <circle class="term" cx="512" cy="730" r="3.5"/>
   <text class="mono" x="520" y="734">pin 1  R1OUT</text>
   <text class="mut" x="600" y="734">← from GPIO21</text>
 
-  <path class="sig" d="M390 620 H430 V770 H512"/>
+  <path class="sig" d="M390 620 H428 V770 H512"/>
   <circle class="term" cx="512" cy="770" r="3.5"/>
   <text class="mono" x="520" y="774">pin 2  R1IN</text>
   <text class="mut" x="600" y="774">← from GPIO22</text>
