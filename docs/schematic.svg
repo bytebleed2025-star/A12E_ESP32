@@ -1,0 +1,322 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 1470" width="1500" height="1470" font-family="Inter, 'Segoe UI', system-ui, sans-serif">
+  <style>
+    .blk   { fill:#ffffff; stroke:#94a3b8; stroke-width:1.5; }
+    .sub   { fill:#f8fafc; stroke:#cbd5e1; stroke-width:1; }
+    .hdr   { fill:#334155; }
+    .htxt  { fill:#ffffff; font-size:14px; font-weight:700; letter-spacing:.02em; }
+    .htxt2 { fill:#cbd5e1; font-size:11px; font-weight:600; }
+    .btxt  { fill:#0f172a; font-size:10px; font-weight:600; }
+    .btxt2 { fill:#0f172a; font-size:9.5px; }
+    .mut   { fill:#64748b; font-size:8.5px; }
+    .mut9  { fill:#64748b; font-size:9px; }
+    .pin   { fill:#0f172a; font-size:11px; font-weight:700; font-family:Consolas,'JetBrains Mono',ui-monospace,monospace; }
+    .mono  { fill:#0f172a; font-size:9.5px; font-family:Consolas,'JetBrains Mono',ui-monospace,monospace; }
+    .mono8 { fill:#0f172a; font-size:8.5px; font-family:Consolas,'JetBrains Mono',ui-monospace,monospace; }
+    .sig   { fill:none; stroke:#1d4ed8; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+    .rs    { fill:none; stroke:#c2410c; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+    .vcc   { fill:none; stroke:#dc2626; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+    .gnd   { fill:none; stroke:#0f766e; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+    .ac    { fill:none; stroke:#7c3aed; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+    .term  { fill:#0f172a; }
+    .dash  { stroke-dasharray:4 3; }
+    .warn  { fill:#b91c1c; font-size:9px; font-weight:600; }
+    .v5    { fill:#b91c1c; font-size:10px; font-weight:700; }
+    .vgnd  { fill:#0f766e; font-size:10px; font-weight:700; }
+  </style>
+
+  <rect width="1500" height="1470" fill="#ffffff"/>
+
+  <!-- ============ TITLE ============ -->
+  <text x="40" y="46" font-size="26" font-weight="700" fill="#0f172a">ESP32 Weighing Scale Control — Wiring Schematic</text>
+  <text x="40" y="72" font-size="12.5" fill="#64748b">A12E_ESP32 · pin map taken from src/secrets.h · logic inputs are active LOW (internal pull-up) · relay modules 5 V / active HIGH · RS232 via MAX232, 9600 8N1</text>
+
+  <!-- ==================================================================== -->
+  <!-- U1  ESP32                                                             -->
+  <!-- ==================================================================== -->
+  <rect class="blk" x="40" y="120" width="350" height="705" rx="8"/>
+  <path class="hdr" d="M48 120 h334 a8 8 0 0 1 8 8 v22 h-350 v-22 a8 8 0 0 1 8 -8 z"/>
+  <text class="htxt" x="56" y="145">ESP32 DevKit v1</text>
+  <text class="htxt2" x="374" y="145" text-anchor="end">U1</text>
+
+  <circle class="term" cx="390" cy="190" r="3.5"/><text class="pin" x="374" y="186" text-anchor="end">GPIO16</text><text class="mut" x="374" y="200" text-anchor="end">Relay 1 trigger</text>
+  <circle class="term" cx="390" cy="300" r="3.5"/><text class="pin" x="374" y="296" text-anchor="end">GPIO17</text><text class="mut" x="374" y="310" text-anchor="end">Relay 2 trigger</text>
+  <circle class="term" cx="390" cy="380" r="3.5"/><text class="pin" x="374" y="376" text-anchor="end">GPIO13</text><text class="mut" x="374" y="390" text-anchor="end">Mode select · active LOW</text>
+  <circle class="term" cx="390" cy="450" r="3.5"/><text class="pin" x="374" y="446" text-anchor="end">GPIO14</text><text class="mut" x="374" y="460" text-anchor="end">Auto-cycle PB · active LOW</text>
+  <circle class="term" cx="390" cy="580" r="3.5"/><text class="pin" x="374" y="576" text-anchor="end">GPIO21</text><text class="mut" x="374" y="590" text-anchor="end">UART1 RX ← MAX232 pin 1</text>
+  <circle class="term" cx="390" cy="620" r="3.5"/><text class="pin" x="374" y="616" text-anchor="end">GPIO22</text><text class="mut" x="374" y="630" text-anchor="end">UART1 TX → MAX232 pin 2</text>
+  <circle class="term" cx="390" cy="700" r="3.5"/><text class="pin" x="374" y="696" text-anchor="end">5V / VIN</text><text class="mut" x="374" y="710" text-anchor="end">→ +5 V rail (POWER block)</text>
+  <circle class="term" cx="390" cy="740" r="3.5"/><text class="pin" x="374" y="736" text-anchor="end">GND</text><text class="mut" x="374" y="750" text-anchor="end">→ ⏚ rail (POWER block)</text>
+
+  <text class="mut" x="56" y="802">GPIO13 / GPIO14 use the internal pull-up — no external resistors.</text>
+
+  <!-- power stubs -->
+  <path class="vcc" d="M390 700 H418"/>
+  <circle class="term" cx="418" cy="700" r="3"/>
+  <path class="gnd" d="M390 740 H418"/>
+  <circle class="term" cx="418" cy="740" r="3"/>
+
+  <!-- ==================================================================== -->
+  <!-- RELAY MODULES                                                        -->
+  <!-- ==================================================================== -->
+  <rect class="blk" x="460" y="120" width="370" height="270" rx="8"/>
+  <path class="hdr" d="M468 120 h354 a8 8 0 0 1 8 8 v22 h-370 v-22 a8 8 0 0 1 8 -8 z"/>
+  <text class="htxt" x="476" y="145">Relay Modules</text>
+  <text class="htxt2" x="814" y="145" text-anchor="end">K1 / K2</text>
+
+  <rect class="sub" x="476" y="162" width="338" height="100" rx="5"/>
+  <text class="btxt" x="488" y="184">K1 · Relay 1 — 5 V module, active HIGH</text>
+  <path class="sig" d="M390 190 H446 V206 H512"/>
+  <circle class="term" cx="512" cy="206" r="3.5"/>
+  <text class="mono" x="520" y="210">GPIO16</text>
+  <circle class="term" cx="814" cy="196" r="3.5"/><text class="mono8" x="806" y="200" text-anchor="end">VCC +5 V</text>
+  <circle class="term" cx="814" cy="228" r="3.5"/><text class="mono8" x="806" y="232" text-anchor="end">GND ⏚</text>
+  <text class="mut9" x="488" y="244">Dry contact COM / NO / NC → see RELAY CONTACTS block</text>
+
+  <rect class="sub" x="476" y="272" width="338" height="100" rx="5"/>
+  <text class="btxt" x="488" y="294">K2 · Relay 2 — 5 V module, active HIGH</text>
+  <path class="sig" d="M390 300 H430 V316 H512"/>
+  <circle class="term" cx="512" cy="316" r="3.5"/>
+  <text class="mono" x="520" y="320">GPIO17</text>
+  <circle class="term" cx="814" cy="306" r="3.5"/><text class="mono8" x="806" y="310" text-anchor="end">VCC +5 V</text>
+  <circle class="term" cx="814" cy="338" r="3.5"/><text class="mono8" x="806" y="342" text-anchor="end">GND ⏚</text>
+  <text class="mut9" x="488" y="354">Dry contact COM / NO / NC → see RELAY CONTACTS block</text>
+
+  <!-- ==================================================================== -->
+  <!-- MODE INPUTS                                                          -->
+  <!-- ==================================================================== -->
+  <rect class="blk" x="460" y="400" width="370" height="226" rx="8"/>
+  <path class="hdr" d="M468 400 h354 a8 8 0 0 1 8 8 v22 h-370 v-22 a8 8 0 0 1 8 -8 z"/>
+  <text class="htxt" x="476" y="425">Mode Inputs</text>
+  <text class="htxt2" x="814" y="425" text-anchor="end">active LOW</text>
+
+  <rect class="sub" x="476" y="446" width="338" height="80" rx="5"/>
+  <text class="btxt" x="488" y="466">SW1 · Mode select (latching)</text>
+  <text class="mut" x="500" y="486">GPIO13</text>
+  <path class="sig" d="M390 380 H446 V498 H512"/>
+  <circle class="term" cx="512" cy="498" r="3.5"/>
+  <path class="sig" d="M512 498 H556"/>
+  <path class="sig dash" d="M512 490 H556"/>
+  <circle cx="512" cy="498" r="3.2" fill="#fff" stroke="#1d4ed8" stroke-width="1.6"/>
+  <circle cx="556" cy="498" r="3.2" fill="#fff" stroke="#1d4ed8" stroke-width="1.6"/>
+  <path class="gnd" d="M556 498 H680 V518"/>
+  <g class="gnd">
+    <path d="M670 518 H690"/><path d="M673 522 H687"/><path d="M676 526 H684"/>
+  </g>
+  <text class="mut9" x="488" y="520">open = AUTO · closed = MANUAL</text>
+
+  <rect class="sub" x="476" y="534" width="338" height="80" rx="5"/>
+  <text class="btxt" x="488" y="554">SW2 · Auto-cycle start (momentary)</text>
+  <text class="mut" x="500" y="574">GPIO14</text>
+  <path class="sig" d="M390 450 H430 V586 H512"/>
+  <circle class="term" cx="512" cy="586" r="3.5"/>
+  <path class="sig" d="M515 579 L553 593"/>
+  <circle cx="512" cy="586" r="3.2" fill="#fff" stroke="#1d4ed8" stroke-width="1.6"/>
+  <circle cx="556" cy="586" r="3.2" fill="#fff" stroke="#1d4ed8" stroke-width="1.6"/>
+  <path class="gnd" d="M556 586 H680 V606"/>
+  <g class="gnd">
+    <path d="M670 606 H690"/><path d="M673 610 H687"/><path d="M676 614 H684"/>
+  </g>
+  <text class="mut9" x="488" y="608">press in AUTO = cycle START</text>
+
+  <!-- ==================================================================== -->
+  <!-- MAX232                                                               -->
+  <!-- ==================================================================== -->
+  <rect class="blk" x="460" y="650" width="370" height="250" rx="8"/>
+  <path class="hdr" d="M468 650 h354 a8 8 0 0 1 8 8 v22 h-370 v-22 a8 8 0 0 1 8 -8 z"/>
+  <text class="htxt" x="476" y="675">RS232 Level Shifter</text>
+  <text class="htxt2" x="814" y="675" text-anchor="end">U2 · MAX232</text>
+
+  <rect class="sub" x="476" y="696" width="338" height="190" rx="5"/>
+
+  <path class="sig" d="M390 580 H446 V730 H512"/>
+  <circle class="term" cx="512" cy="730" r="3.5"/>
+  <text class="mono" x="520" y="734">pin 1  R1OUT</text>
+  <text class="mut" x="600" y="734">← from GPIO21</text>
+
+  <path class="sig" d="M390 620 H430 V770 H512"/>
+  <circle class="term" cx="512" cy="770" r="3.5"/>
+  <text class="mono" x="520" y="774">pin 2  R1IN</text>
+  <text class="mut" x="600" y="774">← from GPIO22</text>
+
+  <circle class="term" cx="512" cy="822" r="3.5"/>
+  <text class="mono" x="520" y="826">pin 9  VCC</text>
+  <text class="mut9" x="600" y="822">C1–C4 0.1 µF charge pump</text>
+  <text class="mut9" x="600" y="838">C5 = V+ store (pin 8), C6 bypass — 0.1 µF</text>
+  <text class="mut9" x="600" y="854">Tie pins 3, 4, 15 → 2 · pin 16 → 1</text>
+
+  <circle class="term" cx="814" cy="760" r="3.5"/>
+  <text class="mono8" x="806" y="764" text-anchor="end">pin 3/4  RIN1</text>
+  <circle class="term" cx="814" cy="800" r="3.5"/>
+  <text class="mono8" x="806" y="804" text-anchor="end">pin 6/7  NOUT1</text>
+  <circle class="term" cx="814" cy="864" r="3.5"/>
+  <text class="mono8" x="806" y="868" text-anchor="end">pin 10  GND ⏚</text>
+
+  <!-- ==================================================================== -->
+  <!-- SCALE RS232 PORT                                                     -->
+  <!-- ==================================================================== -->
+  <rect class="blk" x="890" y="670" width="570" height="270" rx="8"/>
+  <path class="hdr" d="M898 670 h554 a8 8 0 0 1 8 8 v22 h-570 v-22 a8 8 0 0 1 8 -8 z"/>
+  <text class="htxt" x="906" y="695">Scale RS232 Port</text>
+  <text class="htxt2" x="1444" y="695" text-anchor="end">DB9 female</text>
+
+  <rect class="sub" x="906" y="716" width="298" height="190" rx="5"/>
+  <rect x="1020" y="736" width="130" height="130" rx="6" fill="#fff" stroke="#94a3b8" stroke-width="1.5"/>
+
+  <path class="rs" d="M814 760 H1020"/>
+  <circle class="term" cx="1020" cy="760" r="3.5"/>
+  <text class="mono8" x="1028" y="756">3 · TxD ← scale</text>
+  <text class="mut" x="1028" y="768">to U2 RIN1</text>
+
+  <path class="rs" d="M814 800 H1020"/>
+  <circle class="term" cx="1020" cy="800" r="3.5"/>
+  <text class="mono8" x="1028" y="796">2 · RxD → scale</text>
+  <text class="mut" x="1028" y="808">from U2 NOUT1</text>
+
+  <path class="gnd" d="M814 864 H990 V840 H1020"/>
+  <circle class="term" cx="1020" cy="840" r="3.5"/>
+  <text class="mono8" x="1028" y="844">5 · GND</text>
+
+  <text class="mut9" x="906" y="926">Shield / case ground recommended on the DB9 shell, bonded at the ESP32 end only.</text>
+
+  <!-- ==================================================================== -->
+  <!-- RELAY CONTACTS & LOADS                                               -->
+  <!-- ==================================================================== -->
+  <rect class="blk" x="890" y="120" width="570" height="260" rx="8"/>
+  <path class="hdr" d="M898 120 h554 a8 8 0 0 1 8 8 v22 h-570 v-22 a8 8 0 0 1 8 -8 z"/>
+  <text class="htxt" x="906" y="145">Relay Contacts &amp; Loads</text>
+  <text class="htxt2" x="1444" y="145" text-anchor="end">dry contacts</text>
+
+  <circle class="term" cx="890" cy="180" r="3.5"/>
+  <text class="mono8" x="898" y="176">L · line / +</text>
+  <path class="ac" d="M890 180 H980"/>
+  <circle class="term" cx="980" cy="180" r="3.5"/>
+  <text class="mono8" x="988" y="174">COM1</text>
+
+  <circle class="term" cx="980" cy="228" r="3.5"/>
+  <text class="mono8" x="988" y="240">NO1</text>
+
+  <rect x="1060" y="188" width="150" height="44" rx="5" fill="#fff" stroke="#94a3b8" stroke-width="1.5"/>
+  <text class="btxt" x="1072" y="208">LOAD 1</text>
+  <text class="mut" x="1072" y="222">e.g. pump / valve</text>
+  <path class="ac" d="M980 180 H1015 V198 H1060"/>
+  <path class="ac" d="M980 228 H1040 V222 H1060"/>
+  <path class="ac" d="M1210 210 H1330 V352"/>
+
+  <circle class="term" cx="980" cy="262" r="3.5"/>
+  <text class="mono8" x="988" y="256">COM2</text>
+  <circle class="term" cx="980" cy="310" r="3.5"/>
+  <text class="mono8" x="988" y="322">NO2</text>
+
+  <rect x="1060" y="272" width="150" height="44" rx="5" fill="#fff" stroke="#94a3b8" stroke-width="1.5"/>
+  <text class="btxt" x="1072" y="292">LOAD 2</text>
+  <text class="mut" x="1072" y="306">e.g. pump / valve</text>
+  <path class="ac" d="M980 262 H1015 V282 H1060"/>
+  <path class="ac" d="M980 310 H1040 V306 H1060"/>
+  <path class="ac" d="M1210 294 H1290 V352"/>
+
+  <circle class="term" cx="890" cy="352" r="3.5"/>
+  <text class="mono8" x="898" y="346">N · neutral / −</text>
+  <path class="ac" d="M890 352 H1330"/>
+  <circle class="term" cx="1290" cy="352" r="3.2"/>
+  <circle class="term" cx="1330" cy="352" r="3.2"/>
+
+  <text class="mut9" x="1060" y="338">NC contacts left unconnected</text>
+  <text class="warn" x="906" y="370">⚠ Mains-voltage side — keep physically and electrically isolated from the ESP32 / logic wiring.</text>
+
+  <!-- ==================================================================== -->
+  <!-- POWER                                                                -->
+  <!-- ==================================================================== -->
+  <rect class="blk" x="890" y="400" width="570" height="240" rx="8"/>
+  <path class="hdr" d="M898 400 h554 a8 8 0 0 1 8 8 v22 h-570 v-22 a8 8 0 0 1 8 -8 z"/>
+  <text class="htxt" x="906" y="425">Power Supply &amp; Rails</text>
+  <text class="htxt2" x="1444" y="425" text-anchor="end">5 V / 2 A</text>
+
+  <circle cx="884" cy="510" r="9" fill="#fff" stroke="#7c3aed" stroke-width="1.5"/>
+  <text x="884" y="514" text-anchor="middle" font-size="11" font-weight="700" fill="#7c3aed">~</text>
+  <text class="mono8" x="868" y="514" text-anchor="end">230 VAC</text>
+
+  <rect x="906" y="458" width="74" height="104" rx="5" fill="#fff" stroke="#94a3b8" stroke-width="1.5"/>
+  <text class="btxt" x="943" y="505" text-anchor="middle">5 V</text>
+  <text class="mut" x="943" y="521" text-anchor="middle">2 A</text>
+
+  <path class="vcc" d="M980 478 H1440"/>
+  <text class="v5" x="992" y="470">+5 V rail</text>
+  <path class="gnd" d="M980 542 H1440"/>
+  <text class="vgnd" x="992" y="534">⏚ GND rail</text>
+
+  <path class="vcc" d="M1330 478 V496"/>
+  <path d="M1315 496 H1345 M1315 504 H1345" stroke="#dc2626" stroke-width="1.8" fill="none"/>
+  <path class="vcc" d="M1330 504 V542"/>
+  <text class="mono8" x="1352" y="503">470 µF</text>
+  <path class="vcc" d="M1390 478 V496"/>
+  <path d="M1375 496 H1405 M1375 504 H1405" stroke="#dc2626" stroke-width="1.8" fill="none"/>
+  <path class="vcc" d="M1390 504 V542"/>
+  <text class="mono8" x="1408" y="503">0.1 µF</text>
+
+  <text class="mut9" x="906" y="588">→ U1 5V/VIN — power the ESP32 here, not from USB</text>
+  <text class="mut9" x="906" y="608">→ K1 VCC, K2 VCC — relay modules</text>
+  <text class="mut9" x="906" y="628">→ U2 pin 9 VCC — MAX232</text>
+  <text class="mut9" x="1200" y="588">⏚ common: U1 GND, K1, K2, U2 pin 10, DB9-5,</text>
+  <text class="mut9" x="1200" y="608">SW1 / SW2 returns — one single ground</text>
+  <text class="warn" x="1200" y="628">Never tie ⏚ to the AC neutral N.</text>
+
+  <!-- ==================================================================== -->
+  <!-- CONNECTION SUMMARY                                                   -->
+  <!-- ==================================================================== -->
+  <text x="40" y="972" font-size="15" font-weight="700" fill="#0f172a">Connection Summary</text>
+  <line x1="40" y1="1000" x2="1460" y2="1000" stroke="#cbd5e1" stroke-width="1"/>
+  <text class="btxt" x="40" y="1018">From</text>
+  <text class="btxt" x="190" y="1018">Signal</text>
+  <text class="btxt" x="350" y="1018">To</text>
+  <text class="btxt" x="700" y="1018">Notes</text>
+
+  <g class="mono">
+    <text x="40" y="1042">U1 GPIO16</text><text x="190" y="1042">RELAY1_IN</text><text x="350" y="1042">K1 IN (module)</text>
+    <text x="40" y="1063">U1 GPIO17</text><text x="190" y="1063">RELAY2_IN</text><text x="350" y="1063">K2 IN (module)</text>
+    <text x="40" y="1084">U1 GPIO13</text><text x="190" y="1084">MODE_SEL</text><text x="350" y="1084">SW1 → ⏚</text>
+    <text x="40" y="1105">U1 GPIO14</text><text x="190" y="1105">AUTO_CYCLE</text><text x="350" y="1105">SW2 → ⏚</text>
+    <text x="40" y="1126">U1 GPIO21</text><text x="190" y="1126">UART1_RX</text><text x="350" y="1126">U2 pin 1  R1OUT</text>
+    <text x="40" y="1147">U1 GPIO22</text><text x="190" y="1147">UART1_TX</text><text x="350" y="1147">U2 pin 2  R1IN</text>
+    <text x="40" y="1168">U2 pin 6/7</text><text x="190" y="1168">NOUT1</text><text x="350" y="1168">DB9 pin 2  RxD</text>
+    <text x="40" y="1189">U2 pin 3/4</text><text x="190" y="1189">RIN1</text><text x="350" y="1189">DB9 pin 3  TxD</text>
+    <text x="40" y="1210">U1 5V/VIN</text><text x="190" y="1210">+5V</text><text x="350" y="1210">PSU +5 V</text>
+    <text x="40" y="1231">U1 GND</text><text x="190" y="1231">GND</text><text x="350" y="1231">PSU ⏚</text>
+    <text x="40" y="1252">K1 / K2 VCC</text><text x="190" y="1252">+5V</text><text x="350" y="1252">PSU +5 V</text>
+    <text x="40" y="1273">U2 pin 9</text><text x="190" y="1273">+5V</text><text x="350" y="1273">PSU +5 V</text>
+    <text x="40" y="1294">U1/K1/K2/U2/SW/DB9</text><text x="190" y="1294">GND</text><text x="350" y="1294">PSU ⏚</text>
+  </g>
+  <g class="mut9">
+    <text x="700" y="1042">active HIGH, turns relay on</text>
+    <text x="700" y="1063">active HIGH, turns relay on</text>
+    <text x="700" y="1084">latching switch, INPUT_PULLUP, 50 ms debounce; LOW = Manual</text>
+    <text x="700" y="1105">momentary push button, INPUT_PULLUP; LOW = start auto cycle</text>
+    <text x="700" y="1126">9600 8N1, 11 data + CR, frame length 12</text>
+    <text x="700" y="1147">9600 8N1</text>
+    <text x="700" y="1168">RS232 line to scale (differential pair, twisted)</text>
+    <text x="700" y="1189">RS232 line from scale (differential pair, twisted)</text>
+    <text x="700" y="1210">feed here — do not power from USB at the same time</text>
+    <text x="700" y="1231">single common ground for the whole board</text>
+    <text x="700" y="1252">relay coil supply</text>
+    <text x="700" y="1273">MAX232 VCC (charge pump generated internally)</text>
+    <text x="700" y="1294">U2 pin 10, DB9-5 and both button returns</text>
+  </g>
+
+  <!-- ============ LEGEND ============ -->
+  <text class="btxt" x="40" y="1334">Legend</text>
+  <path class="sig" d="M100 1330 H124"/><text class="mut9" x="130" y="1334">logic / signal</text>
+  <path class="rs" d="M240 1330 H264"/><text class="mut9" x="270" y="1334">RS232 pair</text>
+  <path class="vcc" d="M380 1330 H404"/><text class="mut9" x="410" y="1334">+5 V</text>
+  <path class="gnd" d="M490 1330 H514"/><text class="mut9" x="520" y="1334">GND (⏚)</text>
+  <path class="ac" d="M620 1330 H644"/><text class="mut9" x="650" y="1334">mains / load side</text>
+  <circle class="term" cx="790" cy="1330" r="3.5"/><text class="mut9" x="800" y="1334">terminal / connection point</text>
+
+  <!-- ============ NOTES ============ -->
+  <text x="40" y="1372" font-size="13" font-weight="700" fill="#0f172a">Notes</text>
+  <g class="mut9">
+    <text x="40" y="1392">1.  SW1 selects the operating mode: LOW (pressed) = Manual — the web UI ON/OFF buttons drive the relays; HIGH (released) = Auto — weight thresholds drive the relays.</text>
+    <text x="40" y="1410">2.  SW2 is only read while SW1 is HIGH (Auto mode). A LOW pulse on GPIO14 sets both relays ON; the cycle then runs until the scale reports a weight at or above the matching threshold.</text>
+    <text x="40" y="1428">3.  Relay modules must be the 5 V low-level-trigger type, matching the 3.3 V ESP32 GPIO. If a module turns on at 0 V, add an NPN inverter or use a 3.3 V coil module.</text>
+    <text x="40" y="1446">4.  MAX232 charge-pump capacitors C1–C4 and the V+ storage cap C5 are all 0.1 µF ceramic, fitted close to the device. Add a 0.1 µF bypass cap at pins 9/10.</text>
+  </g>
+</svg>
