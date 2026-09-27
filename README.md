@@ -252,6 +252,13 @@ W n 0 0 0 0 0 4 . 3 k g
 - Position 9: Decimal digit
 - Ends with: `\r\n`
 
+⚠️ **Unverified:** the frame comment above documents positions `0`–`11`
+(12 characters), but `readRS232Data()` in `src/main.cpp` only calls
+`processFrame()` when `bufferIndex == 11` at the `\r`, which corresponds to
+**11** characters received. The comment and the check disagree. Confirm the
+real frame against your scale and, if they differ, fix `bufferIndex == 11` in
+`src/main.cpp` before relying on this section.
+
 ## Troubleshooting
 
 ### Can't find ESP32 serial port
@@ -278,15 +285,41 @@ pio run --target upload
 
 ### Relays not activating
 - Check GPIO pins (16, 17) are correctly wired
-- Verify relay module voltage requirements (typically 5V)
-- Check weight thresholds in `secrets.h`
+- **Confirm the module is LOW-level trigger.** A high-level-trigger module
+  energises at 0 V, so it will be permanently ON with a 3.3 V GPIO and will
+  never switch. Swap the module or add an NPN inverter stage.
+- Check weight thresholds — but note they are persisted to `/config.json` and
+  the web UI overwrites the values in `secrets.h`
+- Relay coils need their own 5 V supply; don't try to power them from a GPIO
+
+### Web UI relay buttons do nothing
+- The API is rejected in Auto mode. Check the `[MODE]` line in the serial
+  monitor and set SW1 (GPIO13) to Manual (pressed / LOW).
+- SW1 overrides the web-selected mode on every boot, so a mode set via
+  `/api/mode` will not survive a restart.
+
+### Mode switch seems stuck or flips on its own
+- SW1/SW2 bounce for a few milliseconds. Firmware debounces at 50 ms
+  (`debounceDelay` in `src/main.cpp`).
+- Check for a loose or noisy switch — an unbonded button on a long lead will
+  read phantom LOWs and toggle the mode continuously.
+
+### Weight always reads 0
+- Confirm the MAX232 is fitted with all 6 charge-pump capacitors
+- RS232 is inverted and level-shifted — a direct TTL connection will not work
+- Verify the DB9 pinout: scale TxD (pin 3) → MAX232 pin 3/4, scale RxD
+  (pin 2) → MAX232 pin 6/7
+- Check the baud rate matches `SERIAL_BAUD_RATE` (9600) and that the frame
+  length matches what `readRS232Data()` accepts — see the note in
+  [RS232 Frame Format](#rs232-frame-format)
 
 ## Web UI Features
 
 - **Real-time Weight Display** - Updates every second
 - **Relay Status Indicators** - Visual feedback (green=ON, red=OFF)
-- **Manual Control Buttons** - Override auto-mode
-- **Threshold Display** - Shows current activation thresholds
+- **Manual Control Buttons** - Active only in Manual mode (SW1 pressed)
+- **Threshold Display / Editing** - Shows and updates activation thresholds
+- **Mode Indicator** - Shows Manual or Auto as set by SW1
 - **Connection Status** - Shows connection state
 - **Responsive Design** - Optimized for mobile and desktop
 - **Error Handling** - Displays connection errors
@@ -316,10 +349,18 @@ pio run --target upload
 ## Security Notes
 
 ⚠️ **Important:**
-- `secrets.h` contains WiFi credentials
-- Add to `.gitignore` before pushing to GitHub
-- Change default WiFi password in production
-- No authentication on web API (local network only)
+- `src/secrets.h` and `include/secrets.h` contain the WiFi AP credentials in
+  plain text
+- ⚠️ **Both files are already tracked in git**, so the `secrets.h` rule in
+  `.gitignore` does not protect them — it only affects untracked files. The
+  credentials are in the repository history and must be treated as public.
+- To fix properly: rotate the AP password, then either commit a
+  `secrets.example.h` and untrack the real file
+  (`git rm --cached src/secrets.h`), or move the values to environment
+  variables. Rewriting history is the only way to purge the old values.
+- Change the default WiFi password in production
+- No authentication on the web API — anyone on the AP can drive the relays.
+  The AP password is the only protection.
 
 ## Future Enhancements
 
