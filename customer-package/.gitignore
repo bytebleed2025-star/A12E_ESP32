@@ -1,0 +1,3 @@
+# Local distribution files (the firmware binary / zip are not committed)
+*.bin
+*.zip

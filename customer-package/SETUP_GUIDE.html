@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A12E Scale Monitor — Customer Setup Guide</title>
+<style>
+  :root {
+    --ink: #1f2433;
+    --muted: #66708a;
+    --line: #e4e8f3;
+    --brand: #5b6cff;
+    --brand-2: #8b5cf6;
+    --ok: #0f8a5f;
+    --warn: #9a5b00;
+    --err: #b42318;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 24px;
+    background: #eef1fa;
+    color: var(--ink);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+  }
+  .page {
+    max-width: 900px;
+    margin: 0 auto;
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 18px 60px rgba(30, 40, 90, 0.16);
+    overflow: hidden;
+  }
+  header {
+    padding: 34px 40px 28px;
+    background: linear-gradient(135deg, #5b6cff, #8b5cf6);
+    color: #fff;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    opacity: 0.95;
+  }
+  .logo {
+    width: 38px; height: 38px; border-radius: 12px;
+    background: rgba(255, 255, 255, 0.18);
+    display: grid; place-items: center; font-size: 19px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+  }
+  h1 { margin: 18px 0 6px; font-size: 30px; line-height: 1.2; }
+  .subtitle { margin: 0; opacity: 0.9; font-size: 14px; }
+  .chips { margin-top: 16px; display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.6px;
+    padding: 5px 10px; border-radius: 999px;
+    background: rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+  }
+  main { padding: 32px 40px 40px; }
+  h2 {
+    margin: 34px 0 12px; font-size: 20px;
+    padding-bottom: 8px; border-bottom: 1px solid var(--line);
+  }
+  h2:first-child { margin-top: 0; }
+  h3 { margin: 22px 0 8px; font-size: 16px; }
+  p { margin: 0 0 12px; }
+  ul, ol { margin: 0 0 14px 22px; padding: 0; }
+  li { margin-bottom: 5px; }
+  table {
+    width: 100%; border-collapse: collapse; margin: 10px 0 16px;
+    font-size: 13px;
+  }
+  th, td { text-align: left; padding: 9px 10px; border: 1px solid var(--line); vertical-align: top; }
+  th { background: #f6f7ff; font-size: 12px; text-transform: uppercase; letter-spacing: 0.6px; }
+  code, .mono {
+    font-family: 'Courier New', monospace;
+    background: #f3f5fc; border: 1px solid #e2e6f2;
+    border-radius: 5px; padding: 1px 5px; font-size: 12px;
+  }
+  pre {
+    margin: 10px 0 16px; padding: 13px 14px;
+    background: #0f1425; color: #dfe6ff;
+    border-radius: 10px; overflow-x: auto;
+    font-family: 'Courier New', monospace; font-size: 12px;
+    line-height: 1.55;
+  }
+  pre code { background: transparent; border: 0; padding: 0; color: inherit; }
+  .callout {
+    border-radius: 10px; padding: 13px 15px; margin: 14px 0 18px;
+    font-size: 13px; border: 1px solid;
+  }
+  .callout strong { display: block; margin-bottom: 3px; }
+  .info { background: #eff3ff; border-color: #cbd5ff; color: #253874; }
+  .warn { background: #fff8e8; border-color: #f3d48a; color: var(--warn); }
+  .danger { background: #fff1f0; border-color: #ffc9c4; color: var(--err); }
+  .ok { background: #ecfbf4; border-color: #b8ecd7; color: var(--ok); }
+  .step {
+    display: flex; gap: 10px; margin-bottom: 14px;
+  }
+  .step-num {
+    flex: 0 0 26px; width: 26px; height: 26px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--brand), var(--brand-2));
+    color: #fff; font-size: 12px; font-weight: 800;
+    display: grid; place-items: center; margin-top: 2px;
+  }
+  .step-body { flex: 1; }
+  .step-body p:last-child { margin-bottom: 0; }
+  .grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+    margin: 10px 0 16px;
+  }
+  .card {
+    border: 1px solid var(--line); border-radius: 10px;
+    padding: 12px 14px; background: #fbfcff;
+  }
+  .card h4 { margin: 0 0 6px; font-size: 13px; }
+  .card p { margin: 0; font-size: 12px; color: var(--muted); }
+  .footer {
+    padding: 20px 40px 28px; border-top: 1px solid var(--line);
+    color: var(--muted); font-size: 12px;
+    display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  }
+  .footer strong { color: var(--ink); }
+  .print-btn {
+    position: fixed; right: 22px; bottom: 22px;
+    border: 0; border-radius: 999px; padding: 12px 18px;
+    background: linear-gradient(135deg, var(--brand), var(--brand-2));
+    color: #fff; font-weight: 700; font-size: 13px; cursor: pointer;
+    box-shadow: 0 10px 24px rgba(91, 108, 255, 0.35);
+  }
+  @media (max-width: 640px) {
+    body { padding: 10px; }
+    header { padding: 24px 20px; }
+    main { padding: 22px 20px 30px; }
+    h1 { font-size: 24px; }
+    .grid { grid-template-columns: 1fr; }
+    .footer { padding: 18px 20px; }
+    .print-btn { display: none; }
+  }
+  @media print {
+    @page { size: A4; margin: 14mm; }
+    body { background: #fff; padding: 0; }
+    .page { box-shadow: none; border-radius: 0; max-width: none; }
+    header { padding: 18mm 0 10mm; background: #2c3e9e !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    main { padding: 8mm 0 0; }
+    .print-btn { display: none; }
+    h2 { page-break-after: avoid; }
+    table, pre, .card, .callout { page-break-inside: avoid; }
+    a { color: inherit; text-decoration: none; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <div class="brand">
+      <div class="logo">&#9878;&#65039;</div>
+      <div>A12E SCALE MONITOR</div>
+    </div>
+    <h1>Customer Setup Guide</h1>
+    <p class="subtitle">ESP32 · 3-hour trial · Local web monitor · Optional Google Sheets</p>
+    <div class="chips">
+      <span class="chip">Firmware 1.2.0</span>
+      <span class="chip">AP + STA</span>
+      <span class="chip">3-hour trial</span>
+      <span class="chip">Offline license</span>
+    </div>
+  </header>
+
+  <main>
+    <div class="callout ok">
+      <strong>Thank you for trying the A12E Scale Monitor.</strong>
+      This guide covers flashing, wiring, the local web page, optional Google
+      Sheets logging, and activation after the trial.
+    </div>
+
+    <h2>1. What you received</h2>
+    <table>
+      <tr><th>File</th><th>Purpose</th></tr>
+      <tr><td><code>A12E_SCALE_MONITOR_3H_TRIAL_CLOUD_FACTORY.bin</code></td><td>Complete ESP32 firmware image</td></tr>
+      <tr><td><code>SETUP_GUIDE.html</code> / <code>.md</code></td><td>This guide</td></tr>
+      <tr><td><code>GoogleSheets_Code.gs</code></td><td>Optional Google Apps Script for cloud logging</td></tr>
+    </table>
+
+    <p><strong>SHA256 of the <code>.bin</code>:</strong></p>
+    <pre><code>F16F2A7CA1F4F48DCEDCF50F54B18F92CC87729D390D5FAA9D6269420C13125C</code></pre>
+
+    <div class="callout info">
+      <strong>Factory image</strong>
+      This is a merged image for offset <code>0x0</code>. Do not use the small
+      <code>firmware.bin</code> from a PlatformIO build folder.
+    </div>
+
+    <h2>2. What you need</h2>
+    <div class="grid">
+      <div class="card">
+        <h4>Hardware</h4>
+        <p>ESP32 DevKit v1 or compatible, USB data cable, 5 V supply, MAX232 for the scale.</p>
+      </div>
+      <div class="card">
+        <h4>PC</h4>
+        <p>Windows (or macOS/Linux with Python + esptool) and the USB-serial driver for your board.</p>
+      </div>
+      <div class="card">
+        <h4>Optional cloud</h4>
+        <p>2.4 GHz WiFi (not 5 GHz) and a Google account for Google Sheets.</p>
+      </div>
+      <div class="card">
+        <h4>Drivers</h4>
+        <p>CP210x (Silicon Labs), CH340/CH341 (WCH), or FTDI — match your board.</p>
+      </div>
+    </div>
+
+    <h2>3. Flash the firmware</h2>
+    <div class="callout warn">
+      <strong>Erase the flash first.</strong>
+      This resets the 3-hour trial to a clean start and removes any old settings.
+    </div>
+
+    <h3>Option A — ESP Flash Download Tool (Windows)</h3>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <p>Download and open <strong>ESP Flash Download Tool</strong> from Espressif.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <p>Select <strong>ESP32</strong> and <strong>Developer Mode</strong>.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <p>Set the flash options:</p>
+        <table>
+          <tr><th>Setting</th><th>Value</th></tr>
+          <tr><td>Flash Mode</td><td><strong>DIO</strong></td></tr>
+          <tr><td>Flash Frequency</td><td><strong>40 MHz</strong></td></tr>
+          <tr><td>Flash Size</td><td><strong>4 MB</strong></td></tr>
+          <tr><td>Erase Flash</td><td><strong>Erase All</strong></td></tr>
+        </table>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <p>Click <strong>Add</strong>, choose the <code>.bin</code>, and set the offset to <strong><code>0x0</code></strong>.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <p>Select the correct <strong>COM port</strong>, click <strong>START</strong>, and wait for <strong>FINISH</strong>.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">6</div>
+      <div class="step-body">
+        <p>Press the <strong>EN/RST</strong> button on the board once.</p>
+      </div>
+    </div>
+
+    <h3>Option B — esptool (Windows/macOS/Linux)</h3>
+    <pre><code># Replace COM3 with your port (Windows) or /dev/ttyUSB0 (Linux/macOS)
+esptool.py --chip esp32 --port COM3 erase_flash
+esptool.py --chip esp32 --port COM3 --baud 921600 write_flash 0x0 A12E_SCALE_MONITOR_3H_TRIAL_CLOUD_FACTORY.bin</code></pre>
+
+    <p>If the board is not detected:</p>
+    <ol>
+      <li>Hold <strong>BOOT/IO0</strong>.</li>
+      <li>Press and release <strong>EN/RST</strong>.</li>
+      <li>Release <strong>BOOT</strong>.</li>
+      <li>Run the command again.</li>
+    </ol>
+    <p>If upload fails at 921600, use <code>--baud 115200</code>.</p>
+
+    <div class="callout info">
+      <strong>USB cable and driver</strong>
+      Use a data cable, not a charge-only cable. If no COM port appears,
+      install the USB-serial driver for your board.
+    </div>
+
+    <h2>4. Connect the scale</h2>
+    <p>Connect the scale/display RS232 output through a <strong>MAX232</strong> level shifter:</p>
+    <table>
+      <tr><th>Signal</th><th>ESP32</th><th>MAX232</th><th>Scale DB9</th></tr>
+      <tr><td>Scale TX &rarr; ESP32 RX</td><td><strong>GPIO21</strong></td><td>R1OUT &larr; RIN1</td><td>pin 3 (TxD)</td></tr>
+      <tr><td>ESP32 TX <em>(optional)</em></td><td>GPIO22</td><td>R1IN &rarr; NOUT1</td><td>pin 2 (RxD)</td></tr>
+      <tr><td>Ground</td><td>GND</td><td>GND</td><td>pin 5 (GND)</td></tr>
+    </table>
+    <p>Serial format: <strong>9600 baud, 8N1</strong>.</p>
+
+    <div class="callout danger">
+      <strong>Never connect RS232 voltage levels directly to the ESP32.</strong>
+      RS232 can be ±12 V and will damage the board. Use a MAX232 (or equivalent).
+    </div>
+
+    <h2>5. Open the monitor page</h2>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <p>Connect your phone or PC to WiFi:</p>
+        <ul>
+          <li><strong>SSID:</strong> <code>A12E_SCALE_MONITOR</code></li>
+          <li><strong>Password:</strong> <code>33333333</code></li>
+        </ul>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <p>Open <strong>http://192.168.4.1</strong> in your browser.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <p>You should see the live weight, <strong>Device ID</strong>, trial countdown (about 3h 00m), raw frame, and counters.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <p>Use the tabs:</p>
+        <ul>
+          <li><strong>Monitor</strong> — live weight and license</li>
+          <li><strong>Debug</strong> — last 48 log lines for support</li>
+          <li><strong>Config</strong> — WiFi and Google Sheets settings</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout warn">
+      <strong>Weight stays at <code>--</code>?</strong>
+      Check the RS232 wiring, GND, baud rate (9600), and MAX232. Open the
+      <strong>Debug</strong> tab to see received frames and errors.
+    </div>
+
+    <h2>6. Optional — upload to Google Sheets</h2>
+    <p>
+      The board keeps its own WiFi AP <strong>and</strong> can connect to your
+      router at the same time. The ESP32 uploads the data; your phone does
+      <strong>not</strong> get internet through the ESP32.
+    </p>
+    <div class="callout info">
+      <strong>2.4 GHz only</strong>
+      ESP32 cannot connect to 5 GHz WiFi. Use a 2.4 GHz network.
+    </div>
+
+    <h3>6.1 Create the Google Sheet</h3>
+    <ol>
+      <li>Open <strong>https://sheets.new</strong> and name it (e.g. A12E Scale Data).</li>
+      <li>In the sheet: <strong>Extensions &rarr; Apps Script</strong>.</li>
+      <li>Delete the default code and paste the contents of <code>GoogleSheets_Code.gs</code>.</li>
+      <li>Change <code>const TOKEN</code> to a long random string. Remember it.</li>
+      <li>Save.</li>
+      <li><strong>Project Settings</strong> &rarr; <strong>Time zone</strong> &rarr; <strong>Asia/Jakarta</strong>.</li>
+    </ol>
+
+    <h3>6.2 Deploy the Apps Script</h3>
+    <ol>
+      <li><strong>Deploy &rarr; New deployment</strong>.</li>
+      <li>Type: <strong>Web app</strong>.</li>
+      <li>Description: <code>A12E logger</code>.</li>
+      <li><strong>Execute as:</strong> <code>Me</code>.</li>
+      <li><strong>Who has access:</strong> <code>Anyone</code>.</li>
+      <li><strong>Deploy</strong> &rarr; <strong>Authorize access</strong>.</li>
+      <li>Copy the <strong>Web app URL</strong> (ends with <code>/exec</code>).</li>
+    </ol>
+
+    <h3>6.3 Configure the monitor</h3>
+    <ol>
+      <li>Stay connected to <code>A12E_SCALE_MONITOR</code>.</li>
+      <li>Open the <strong>Config</strong> tab.</li>
+      <li>Under <strong>Router WiFi</strong>: press <strong>Scan</strong> or type your 2.4 GHz SSID, then enter the password.</li>
+      <li>Under <strong>Google Sheets</strong>: paste the <code>/exec</code> URL and the same token; set the interval (e.g. 60 s).</li>
+      <li>Press <strong>Save &amp; apply</strong>.</li>
+      <li>Press <strong>Send test row</strong>. A row should appear in the sheet.</li>
+    </ol>
+
+    <p>The board uploads one row per interval only when the scale has a valid reading and the trial/license is active. After the trial expires, uploads pause until activation; the test row still works.</p>
+
+    <div class="callout info">
+      <strong>Config is AP-only</strong>
+      The Config tab is available only while connected to the ESP32 AP
+      (<code>192.168.4.1</code>). Devices on your router LAN cannot change settings.
+    </div>
+
+    <h2>7. After the 3-hour trial</h2>
+    <p>
+      The trial counts <strong>powered-on time</strong>, not wall-clock time.
+      Turning the board off pauses the countdown. When it reaches zero, the
+      page locks and hides the weight.
+    </p>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body"><p>Copy the <strong>Device ID</strong> from the monitor page.</p></div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <p>Use <strong>mobile data</strong> (disconnect from the ESP32 WiFi) and open:</p>
+        <pre><code>https://a12e-license.a12e-scale.workers.dev/activate</code></pre>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body"><p>Enter the Device ID and your WhatsApp number.</p></div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <p>Pay <strong>Rp 350.000</strong> to:</p>
+        <ul>
+          <li><strong>BCA 8840884661</strong></li>
+          <li><strong>A/N Fitrianah</strong></li>
+        </ul>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body"><p>Send the transfer receipt to WhatsApp <strong>+62 812-6131-6988</strong>.</p></div>
+    </div>
+    <div class="step">
+      <div class="step-num">6</div>
+      <div class="step-body"><p>After confirmation, open your order page. It shows the activation key.</p></div>
+    </div>
+    <div class="step">
+      <div class="step-num">7</div>
+      <div class="step-body">
+        <p>Reconnect to <code>A12E_SCALE_MONITOR</code>, open <code>http://192.168.4.1</code>, paste the key into the <strong>License</strong> box, and press <strong>Activate</strong>.</p>
+      </div>
+    </div>
+
+    <div class="callout ok">
+      <strong>The key is bound to your Device ID.</strong>
+      Keep it safe. If needed, it can be entered again later on the same device.
+    </div>
+
+    <h2>8. Troubleshooting</h2>
+    <table>
+      <tr><th>Problem</th><th>What to check</th></tr>
+      <tr><td>Board not detected / no COM port</td><td>USB data cable, USB-serial driver, board power</td></tr>
+      <tr><td>Flashing fails to connect</td><td>Hold BOOT, tap EN, release BOOT, retry; try 115200 baud</td></tr>
+      <tr><td>AP <code>A12E_SCALE_MONITOR</code> not visible</td><td>Press EN/RST; check 5 V power; wait a few seconds</td></tr>
+      <tr><td>Page shows <code>--</code> and no frames</td><td>RS232 wiring, GND, MAX232, 9600 baud</td></tr>
+      <tr><td>Weight is 10× / 100× off</td><td>Check the <strong>Raw frame</strong> on the Monitor tab</td></tr>
+      <tr><td>Cloud not uploading</td><td>2.4 GHz WiFi, signal, URL/token, <strong>Send test row</strong></td></tr>
+      <tr><td>Config tab says 403</td><td>You must be connected to the ESP32 AP, not the router LAN</td></tr>
+      <tr><td>Trial reset unexpectedly</td><td>A full flash erase resets the trial to 3 h; a normal reflash keeps it</td></tr>
+      <tr><td>Forgot AP password</td><td>Set it again from Config while connected; otherwise erase to restore <code>33333333</code></td></tr>
+      <tr><td>Need support</td><td>Open <strong>Debug</strong>, press <strong>Copy</strong>, send the log to WhatsApp</td></tr>
+    </table>
+
+    <h2>9. Safety</h2>
+    <ul>
+      <li>Never connect RS232 ±12 V directly to the ESP32. Use MAX232.</li>
+      <li>Use a stable 5 V supply; avoid weak USB chargers.</li>
+      <li>Do not expose the board to water or high heat.</li>
+      <li>Use a strong AP password if the board is in a shared location.</li>
+    </ul>
+
+    <h2>10. Support</h2>
+    <p>
+      <strong>WhatsApp:</strong> +62 812-6131-6988<br>
+      When contacting support, send the <strong>Device ID</strong>, a photo of the
+      wiring (if weight is not showing), and the <strong>Debug</strong> log.
+    </p>
+  </main>
+
+  <div class="footer">
+    <div><strong>A12E Scale Monitor</strong> &middot; Firmware 1.2.0</div>
+    <div>Support: +62 812-6131-6988</div>
+  </div>
+</div>
+
+<button class="print-btn" onclick="window.print()">Print / Save as PDF</button>
+</body>
+</html>
