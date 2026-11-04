@@ -19,7 +19,7 @@ readings to Google Sheets.
 SHA256 of the `.bin`:
 
 ```
-F16F2A7CA1F4F48DCEDCF50F54B18F92CC87729D390D5FAA9D6269420C13125C
+C57AB6A78F7C3D27942E02A4A4C711504A4D80DC79C64317594F63488212EA56
 ```
 
 > This is a **merged factory image**. Do not use the small `firmware.bin` from a

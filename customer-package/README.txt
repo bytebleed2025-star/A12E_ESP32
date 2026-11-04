@@ -7,7 +7,7 @@ Send these files to the customer:
    - Complete ESP32 factory image
    - Flash at offset 0x0
    - Erase flash first (fresh 3-hour trial)
-   - SHA256: F16F2A7CA1F4F48DCEDCF50F54B18F92CC87729D390D5FAA9D6269420C13125C
+   - SHA256: C57AB6A78F7C3D27942E02A4A4C711504A4D80DC79C64317594F63488212EA56
 
 2. SETUP_GUIDE.html
    - Open in a browser and use "Print / Save as PDF" if you want to send a PDF.
