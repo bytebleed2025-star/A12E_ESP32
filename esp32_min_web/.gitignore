@@ -1,0 +1,6 @@
+# Private signing key - NEVER commit or ship this file
+tools/license_private.pem
+
+# Local keypair backup / generated licenses
+tools/*.key
+tools/licenses.txt

@@ -1,0 +1,23 @@
+# A12E license / activation server (Cloudflare Worker + D1)
+name = "a12e-license"
+main = "src/index.js"
+compatibility_date = "2025-01-01"
+workers_dev = true
+
+# After `wrangler d1 create a12e-license`, paste the real ID here.
+[[d1_databases]]
+binding = "DB"
+database_name = "a12e-license"
+database_id = "43f3bec8-d190-464c-9ce9-2ec1ce59b3e9"
+
+[vars]
+SITE_NAME = "A12E Scale Monitor"
+PRICE_LABEL = "Rp 350.000 / device"
+SUPPORT_CONTACT = "WhatsApp: +62 812-6131-6988"
+PAYMENT_INFO = """Transfer to:
+BCA 8840884661
+A/N Fitrianah
+
+After paying, send the transfer receipt to WhatsApp +62 812-6131-6988.
+Please include your Device ID in the message.
+Your order will be confirmed and the activation key will appear on your order page."""
