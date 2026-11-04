@@ -220,7 +220,7 @@ To continue:
    ```
 
 3. Enter the Device ID and your WhatsApp number.
-4. Pay **Rp 350.000** to:
+4. Pay **Rp 500.000** to:
 
    - **BCA 8840884661**
    - **A/N Fitrianah**

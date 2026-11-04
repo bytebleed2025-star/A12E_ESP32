@@ -124,7 +124,7 @@ Edit `[vars]` in `wrangler.toml`:
 ```toml
 [vars]
 SITE_NAME = "A12E Scale Monitor"
-PRICE_LABEL = "Rp 150.000 / device"
+PRICE_LABEL = "Rp 500.000 / device"
 SUPPORT_CONTACT = "WhatsApp: +62 8xx-xxxx-xxxx"
 PAYMENT_INFO = """Transfer to:
 BCA 1234567890

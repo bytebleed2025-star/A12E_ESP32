@@ -2,7 +2,7 @@
 # .dev.vars is gitignored and must never be committed.
 
 SITE_NAME="A12E Scale Monitor (local)"
-PRICE_LABEL="Rp 150.000 / device"
+PRICE_LABEL="Rp 500.000 / device"
 PAYMENT_INFO="Transfer to BCA 1234567890\nA/N Your Name\n\nSend the receipt to WhatsApp +62 8xx-xxxx-xxxx."
 SUPPORT_CONTACT="WhatsApp: +62 8xx-xxxx-xxxx"
 
