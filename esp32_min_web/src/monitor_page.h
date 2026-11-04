@@ -59,11 +59,31 @@ static const char MONITOR_BODY[] = R"HTML(
 
           <div id="activateArea" style="margin-top:16px">
             <label class="field"><span>Activation key</span>
-              <textarea id="keyInput" rows="2" placeholder="Paste activation key"
+              <textarea id="keyInput" rows="2" placeholder="Paste the long activation key"
                         spellcheck="false" autocomplete="off"></textarea>
             </label>
+            <p class="note" style="margin:6px 0 10px">
+              Paste the long key from your order page — not the Device ID.
+              Stay connected to <strong>A12E_SCALE_MONITOR</strong> while pressing Activate.
+            </p>
             <button class="btn" id="activateBtn" type="button" onclick="activateLicense()">Activate</button>
             <div class="msg" id="activateMsg"></div>
+
+            <div class="divider"></div>
+
+            <div class="field"><span>Need a key? Activation page</span>
+              <div class="row">
+                <input id="buyUrl" readonly
+                       value="https://a12e-license.a12e-scale.workers.dev/activate">
+                <button class="btn secondary small" type="button"
+                        onclick="copyBuyLink(this)">Copy link</button>
+              </div>
+            </div>
+            <p class="note">
+              Disconnect from this WiFi first and open the link with mobile data.
+              The page needs internet. Then reconnect to
+              <strong>A12E_SCALE_MONITOR</strong> and paste the key here.
+            </p>
           </div>
 
           <div class="ok-box" id="licensedMsg">Licensed to this device. Thank you!</div>
@@ -241,15 +261,25 @@ static const char MONITOR_SCRIPT[] = R"JS(
         return;
       }
 
+      if (key.indexOf('.') < 0 || key.length < 40) {
+        showActivateMsg('That looks like the Device ID, not an activation key. Paste the long key from your order page.', false);
+        return;
+      }
+
       btn.disabled = true;
       input.disabled = true;
       showActivateMsg('Checking key...', null);
 
-      fetch('/api/activate', {
+      var controller = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+      var timeoutId = controller ? setTimeout(function () { controller.abort(); }, 10000) : null;
+      var options = {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: 'key=' + encodeURIComponent(key)
-      })
+      };
+      if (controller) options.signal = controller.signal;
+
+      fetch('/api/activate', options)
         .then(function (r) {
           return r.json().then(function (d) { return { ok: r.ok, data: d }; });
         })
@@ -262,17 +292,48 @@ static const char MONITOR_SCRIPT[] = R"JS(
             showActivateMsg(res.data.error || 'Invalid key for this device.', false);
           }
         })
-        .catch(function () {
-          showActivateMsg('Connection error. Try again.', false);
+        .catch(function (err) {
+          var msg = (err && err.name === 'AbortError')
+            ? 'Connection timeout. Reconnect to A12E_SCALE_MONITOR and try again.'
+            : 'Connection error. Reconnect to A12E_SCALE_MONITOR and try again.';
+          showActivateMsg(msg, false);
         })
         .finally(function () {
+          if (timeoutId) clearTimeout(timeoutId);
           btn.disabled = false;
           input.disabled = false;
         });
     }
 
-    function copyDeviceId(btn) {
-      var text = currentDeviceId;
+    function copyBuyLink(btn) {
+      var input = $('buyUrl');
+      if (!input) return;
+      var text = input.value;
+      var old = btn.textContent;
+      var done = function () {
+        btn.textContent = 'Copied';
+        setTimeout(function () { btn.textContent = old; }, 1500);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done).catch(function () {
+          input.focus();
+          input.select();
+          input.setSelectionRange(0, text.length);
+          btn.textContent = 'Select';
+          setTimeout(function () { btn.textContent = old; }, 1500);
+        });
+      } else {
+        input.focus();
+        input.select();
+        input.setSelectionRange(0, text.length);
+        try { document.execCommand('copy'); done(); } catch (e) {
+          btn.textContent = 'Select';
+          setTimeout(function () { btn.textContent = old; }, 1500);
+        }
+      }
+    }
+
+    function copyDeviceId(btn) {      var text = currentDeviceId;
       if (!text) return;
       var old = btn.textContent;
       var done = function () {

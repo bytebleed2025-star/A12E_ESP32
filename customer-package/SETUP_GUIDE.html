@@ -436,6 +436,10 @@ esptool.py --chip esp32 --port COM3 --baud 921600 write_flash 0x0 A12E_SCALE_MON
       <div class="step-num">7</div>
       <div class="step-body">
         <p>Reconnect to <code>A12E_SCALE_MONITOR</code>, open <code>http://192.168.4.1</code>, paste the key into the <strong>License</strong> box, and press <strong>Activate</strong>.</p>
+        <ul>
+          <li>Paste the <strong>long activation key</strong> from the order page (it starts with <code>QTEy...</code>), <strong>not the Device ID</strong>.</li>
+          <li>You must be connected to the ESP32 AP when pressing <strong>Activate</strong>. On mobile data the page cannot reach the ESP32 and can hang at “checking key”.</li>
+        </ul>
       </div>
     </div>
 
@@ -453,6 +457,7 @@ esptool.py --chip esp32 --port COM3 --baud 921600 write_flash 0x0 A12E_SCALE_MON
       <tr><td>Page shows <code>--</code> and no frames</td><td>RS232 wiring, GND, MAX232, 9600 baud</td></tr>
       <tr><td>Weight is 10× / 100× off</td><td>Check the <strong>Raw frame</strong> on the Monitor tab</td></tr>
       <tr><td>Cloud not uploading</td><td>2.4 GHz WiFi, signal, URL/token, <strong>Send test row</strong></td></tr>
+      <tr><td>Activate says “checking key” forever</td><td>You are not connected to the ESP32 AP. Reconnect to <code>A12E_SCALE_MONITOR</code>, reload <code>192.168.4.1</code>, and paste the <strong>long key</strong>, not the Device ID.</td></tr>
       <tr><td>Config tab says 403</td><td>You must be connected to the ESP32 AP, not the router LAN</td></tr>
       <tr><td>Trial reset unexpectedly</td><td>A full flash erase resets the trial to 3 h; a normal reflash keeps it</td></tr>
       <tr><td>Forgot AP password</td><td>Set it again from Config while connected; otherwise erase to restore <code>33333333</code></td></tr>

@@ -230,6 +230,12 @@ To continue:
 7. Reconnect to `A12E_SCALE_MONITOR`, open `http://192.168.4.1`, paste the key
    into the **License** box, and press **Activate**.
 
+   - Paste the **long activation key** from the order page (it starts with
+     `QTEy...`), **not the Device ID**.
+   - You must be connected to the ESP32 AP when you press **Activate**. If you
+     are on mobile data, the page cannot reach the ESP32 and will show
+     “checking key” forever.
+
 The key is bound to that specific Device ID. Keep it; it can be re-entered later
 if needed.
 
@@ -245,6 +251,7 @@ if needed.
 | Page shows `--` and no frames | RS232 wiring, GND, MAX232, 9600 baud |
 | Weight is 10× / 100× off | Check the **Raw frame** on the Monitor tab |
 | Cloud not uploading | 2.4 GHz WiFi, signal, URL/token, **Send test row** |
+| Activate says “checking key” forever | You are not connected to the ESP32 AP. Reconnect to `A12E_SCALE_MONITOR`, reload `192.168.4.1`, and paste the **long key**, not the Device ID. |
 | Config tab says 403 | You must be connected to the ESP32 AP, not the router LAN |
 | Trial reset unexpectedly | A full flash erase resets the trial to 3 h (normal reflash keeps it) |
 | Forgot AP password | Set it again from Config while still connected; otherwise full erase resets to `33333333` |
