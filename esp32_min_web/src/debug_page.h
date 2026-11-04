@@ -1,6 +1,6 @@
 /**
  * @file debug_page.h
- * @brief Local web page for viewing the in-RAM debug log.
+ * @brief Debug log page body + client script.
  */
 
 #ifndef DEBUG_PAGE_H
@@ -8,106 +8,30 @@
 
 #include <Arduino.h>
 
-static const char DEBUG_HTML[] PROGMEM = R"DEBUGHTML(<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>A12E Debug Log</title>
-  <style>
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      min-height: 100vh;
-      background: #0e1120;
-      color: #dfe4ff;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-    .wrap { max-width: 980px; margin: 0 auto; padding: 18px; }
-    header {
-      display: flex; align-items: center; justify-content: space-between;
-      gap: 12px; margin-bottom: 14px;
-    }
-    h1 { font-size: 18px; margin: 0; }
-    a { color: #9fb0ff; text-decoration: none; font-size: 13px; }
-    a:hover { text-decoration: underline; }
-    .toolbar {
-      display: flex; flex-wrap: wrap; align-items: center;
-      gap: 8px; margin-bottom: 10px;
-    }
-    button {
-      border: 1px solid #2b3358;
-      background: #171c30;
-      color: #dfe4ff;
-      border-radius: 8px;
-      padding: 7px 11px;
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-    }
-    button:hover { background: #202845; }
-    label {
-      display: flex; align-items: center; gap: 6px;
-      font-size: 12px; color: #9aa3c7;
-    }
-    #status { margin-left: auto; font-size: 12px; color: #8a93b8; }
-    #log {
-      margin: 0;
-      padding: 12px;
-      height: 68vh;
-      overflow: auto;
-      background: #080a12;
-      border: 1px solid #232946;
-      border-radius: 10px;
-      white-space: pre-wrap;
-      word-break: break-word;
-      font-family: 'Courier New', monospace;
-      font-size: 12px;
-      line-height: 1.55;
-    }
-    #log:empty::before {
-      content: 'Waiting for log lines...';
-      color: #555e80;
-    }
-    .hint {
-      margin-top: 10px;
-      color: #8a93b8;
-      font-size: 11px;
-      line-height: 1.6;
-    }
-    @media (max-width: 520px) {
-      .wrap { padding: 10px; }
-      header { flex-direction: column; align-items: flex-start; }
-      #status { margin-left: 0; }
-      #log { height: 62vh; }
-    }
-  </style>
-</head>
-<body>
-  <div class="wrap">
-    <header>
-      <h1>&#9878;&#65039; A12E Debug Log</h1>
-      <a href="/">&larr; Back to monitor</a>
-    </header>
+static const char DEBUG_BODY[] = R"HTML(
+      <section class="card">
+        <h2>Live device log</h2>
+        <div class="toolbar">
+          <button class="btn secondary small" id="pauseBtn" type="button">Pause</button>
+          <button class="btn secondary small" id="clearBtn" type="button">Clear view</button>
+          <button class="btn secondary small" id="copyBtn" type="button">Copy</button>
+          <label class="note" style="display:flex;align-items:center;gap:6px">
+            <input type="checkbox" id="autoScroll" checked> Auto-scroll
+          </label>
+          <span class="status" id="status">connecting...</span>
+        </div>
 
-    <div class="toolbar">
-      <button id="pauseBtn" type="button">Pause</button>
-      <button id="clearBtn" type="button">Clear view</button>
-      <button id="copyBtn" type="button">Copy</button>
-      <label><input type="checkbox" id="autoScroll" checked> Auto-scroll</label>
-      <span id="status">connecting...</span>
-    </div>
+        <pre class="console" id="log" tabindex="0"></pre>
 
-    <pre id="log" tabindex="0"></pre>
+        <p class="note" style="margin-top:12px">
+          RAM buffer, last ~48 lines. A reboot clears it. The same lines are also
+          printed to the USB serial port at 115200 baud. Timestamps are uptime,
+          not wall-clock time.
+        </p>
+      </section>
+)HTML";
 
-    <div class="hint">
-      RAM buffer, last ~48 lines. A reboot clears it. The same lines are also
-      printed to the USB serial port at 115200 baud. Timestamps are uptime,
-      not wall-clock time.
-    </div>
-  </div>
-
-  <script>
+static const char DEBUG_SCRIPT[] = R"JS(
     var logEl = document.getElementById('log');
     var statusEl = document.getElementById('status');
     var pauseBtn = document.getElementById('pauseBtn');
@@ -223,8 +147,6 @@ static const char DEBUG_HTML[] PROGMEM = R"DEBUGHTML(<!DOCTYPE html>
     });
 
     start();
-  </script>
-</body>
-</html>)DEBUGHTML";
+)JS";
 
 #endif // DEBUG_PAGE_H

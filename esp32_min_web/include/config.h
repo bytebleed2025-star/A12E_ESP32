@@ -49,6 +49,16 @@
 #define SCALE_TIMEOUT_MS 3000
 
 // ============================================================================
+// Google Sheets upload (AP+STA mode)
+// ============================================================================
+
+// The board always keeps its own AP. If the STA (router) credentials below are
+// configured, it also connects to your router and uploads readings.
+#define SHEET_UPLOAD_INTERVAL_MS 60000UL  // 1 row per minute while scale is valid
+#define SHEET_HTTP_TIMEOUT_MS 10000       // HTTP connect/read timeout
+#define SHEET_TIMEZONE "WIB-7"            // POSIX TZ for NTP (Indonesia = WIB-7)
+
+// ============================================================================
 // Debug serial (USB)
 // ============================================================================
 

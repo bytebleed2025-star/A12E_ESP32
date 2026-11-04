@@ -34,13 +34,15 @@
 #include "config.h"
 #include "license.h"
 #include "log.h"
+#include "settings.h"
+#include "net.h"
+#include "sheets.h"
+#include "web_ui.h"
+#include "monitor_page.h"
 #include "debug_page.h"
+#include "config_page.h"
 
-#define FW_VERSION "1.1.0"
-
-// Used to inject STATUS_UPDATE_INTERVAL into the embedded page.
-#define STRINGIFY_INNER(x) #x
-#define STRINGIFY(x) STRINGIFY_INNER(x)
+#define FW_VERSION "1.2.0"
 
 // ============================================================================
 // Globals
@@ -65,402 +67,7 @@ static unsigned long lastLogMs = 0;
 // Embedded web page (no LittleFS / uploadfs needed)
 // ============================================================================
 
-static const char INDEX_HTML[] PROGMEM = R"HTML(<!DOCTYPE html>
-<html lang="id">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>A12E Scale Monitor</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 16px;
-    }
-    .card {
-      background: #fff;
-      border-radius: 20px;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-      padding: 32px;
-      max-width: 460px;
-      width: 100%;
-    }
-    h1 { text-align: center; color: #333; font-size: 26px; }
-    .subtitle {
-      text-align: center; color: #999; font-size: 13px;
-      margin: 6px 0 22px;
-    }
-    .badge-row { text-align: center; margin-bottom: 16px; }
-    .badge {
-      display: inline-block; padding: 6px 14px; border-radius: 999px;
-      background: #e8f5e9; color: #2e7d32;
-      font-size: 11px; font-weight: 700;
-      letter-spacing: 1px; text-transform: uppercase;
-      transition: all 0.3s ease;
-    }
-    .badge.off { background: #ffebee; color: #c62828; }
-    .display {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: #fff;
-      border-radius: 16px;
-      padding: 36px 20px;
-      text-align: center;
-      box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
-    }
-    .label {
-      font-size: 12px; letter-spacing: 2px; text-transform: uppercase;
-      opacity: 0.85; margin-bottom: 10px;
-    }
-    .value {
-      font-family: 'Courier New', monospace;
-      font-size: 58px; font-weight: 700;
-      letter-spacing: 2px; line-height: 1;
-      transition: opacity 0.3s ease;
-    }
-    .value.stale { opacity: 0.35; }
-    .unit { font-size: 22px; font-weight: 600; margin-left: 8px; }
-    .meta {
-      margin-top: 22px; font-size: 13px; color: #555;
-      display: grid; gap: 8px;
-    }
-    .row { display: flex; justify-content: space-between; gap: 12px; }
-    .k { color: #999; white-space: nowrap; }
-    .v {
-      font-family: 'Courier New', monospace;
-      font-weight: 600; text-align: right; word-break: break-all;
-    }
-    .footer {
-      text-align: center; color: #bbb; font-size: 11px;
-      margin-top: 22px; line-height: 1.7;
-    }
-    .debug-link {
-      color: #667eea; text-decoration: none; font-weight: 600;
-    }
-    .debug-link:hover { text-decoration: underline; }
-    .lock-note {
-      display: none;
-      background: #ffebee; color: #c62828;
-      border-left: 4px solid #c62828;
-      border-radius: 8px; padding: 12px 14px;
-      font-size: 13px; font-weight: 600;
-      margin-bottom: 16px;
-    }
-    .license {
-      margin-top: 20px; padding-top: 18px;
-      border-top: 1px solid #eee;
-    }
-    .license-head {
-      display: flex; justify-content: space-between; align-items: center;
-      margin-bottom: 12px;
-    }
-    .license-title { font-size: 13px; font-weight: 700; color: #333; }
-    .pill {
-      display: inline-block; padding: 4px 10px; border-radius: 999px;
-      background: #eef2ff; color: #4b5bd6;
-      font-size: 10px; font-weight: 700;
-      letter-spacing: 1px; text-transform: uppercase;
-    }
-    .pill.licensed { background: #e8f5e9; color: #2e7d32; }
-    .pill.expired { background: #ffebee; color: #c62828; }
-    .lrow {
-      display: flex; justify-content: space-between; align-items: center;
-      gap: 10px; font-size: 13px; margin-bottom: 10px;
-    }
-    .dev-block { margin-bottom: 10px; }
-    .dev-block .k { display: block; font-size: 13px; margin-bottom: 6px; }
-    .dev-row { display: flex; gap: 8px; align-items: center; }
-    .devid {
-      flex: 1; min-width: 0; padding: 6px 8px;
-      border: 1px solid #e5e7f0; border-radius: 6px;
-      background: #f7f8ff; color: #333;
-      font-family: 'Courier New', monospace;
-      font-size: 13px; font-weight: 700; letter-spacing: 1px;
-      text-align: center;
-    }
-    .btn-copy {
-      padding: 6px 10px; border: 1px solid #d7dcef; border-radius: 6px;
-      background: #fff; color: #5b6bd6;
-      font-size: 10px; font-weight: 700; letter-spacing: 1px;
-      cursor: pointer;
-    }
-    .act-row { display: flex; gap: 8px; margin-top: 4px; }
-    .key-input {
-      flex: 1; min-width: 0;
-      padding: 9px 10px;
-      border: 2px solid #eee; border-radius: 8px;
-      font-family: 'Courier New', monospace; font-size: 11px;
-      resize: none; outline: none;
-      transition: border-color 0.3s ease;
-    }
-    .key-input:focus { border-color: #667eea; }
-    .btn-activate {
-      padding: 0 14px; border: none; border-radius: 8px;
-      background: #667eea; color: #fff;
-      font-size: 11px; font-weight: 700; letter-spacing: 1px;
-      cursor: pointer; transition: all 0.3s ease;
-    }
-    .btn-activate:hover:not(:disabled) { background: #5a6fd6; }
-    .btn-activate:disabled { opacity: 0.6; cursor: not-allowed; }
-    .msg { font-size: 12px; margin-top: 8px; min-height: 16px; }
-    .msg.ok { color: #2e7d32; }
-    .msg.err { color: #c62828; }
-    .licensed-msg {
-      display: none;
-      background: #e8f5e9; color: #2e7d32;
-      border-radius: 8px; padding: 10px 12px;
-      font-size: 13px; font-weight: 600;
-      margin-top: 8px;
-    }
-    @media (max-width: 480px) {
-      .card { padding: 22px; }
-      .value { font-size: 46px; }
-    }
-  </style>
-</head>
-<body>
-  <div class="card">
-    <h1>&#9878;&#65039; A12E Scale Monitor</h1>
-    <div class="subtitle" id="host">ESP32 weight monitor</div>
 
-    <div class="badge-row">
-      <span class="badge" id="badge">Menunggu timbangan</span>
-    </div>
-
-    <div class="lock-note" id="lockNote">
-      Trial expired. Enter an activation key below to continue using this device.
-    </div>
-
-    <div class="display">
-      <div class="label">Timbangan Terukur</div>
-      <div class="value" id="valueBox">
-        <span id="weight">--</span><span class="unit">kg</span>
-      </div>
-    </div>
-
-    <div class="meta">
-      <div class="row"><span class="k">Raw frame</span><span class="v" id="raw">-</span></div>
-      <div class="row"><span class="k">Frames received</span><span class="v" id="frames">0</span></div>
-      <div class="row"><span class="k">Last update</span><span class="v" id="age">-</span></div>
-      <div class="row"><span class="k">Uptime</span><span class="v" id="uptime">-</span></div>
-    </div>
-
-    <div class="license">
-      <div class="license-head">
-        <span class="license-title">License</span>
-        <span class="pill" id="licensePill">Trial</span>
-      </div>
-
-      <div class="dev-block">
-        <span class="k">Device ID</span>
-        <div class="dev-row">
-          <input class="devid" id="deviceId" readonly value="...">
-          <button class="btn-copy" onclick="copyDeviceId(this)">COPY</button>
-        </div>
-      </div>
-
-      <div class="lrow">
-        <span class="k">Trial left</span>
-        <span class="v" id="trialLeft">--</span>
-      </div>
-
-      <div id="activateArea">
-        <div class="act-row">
-          <textarea class="key-input" id="keyInput" rows="2"
-                    placeholder="Paste activation key"
-                    spellcheck="false" autocomplete="off"></textarea>
-          <button class="btn-activate" id="activateBtn"
-                  onclick="activateLicense()">ACTIVATE</button>
-        </div>
-        <div class="msg" id="activateMsg"></div>
-      </div>
-
-      <div class="licensed-msg" id="licensedMsg">
-        Licensed to this device. Thank you!
-      </div>
-    </div>
-
-    <div class="footer">
-      <div>RS232 &rarr; ESP32 &rarr; Web (read only)</div>
-      <div>Develop by GTi_Dev_ShD</div>
-      <div><a class="debug-link" href="/debug">Open debug log &rarr;</a></div>
-    </div>
-  </div>
-
-  <script>
-    const POLL_MS = )HTML" STRINGIFY(STATUS_UPDATE_INTERVAL) R"HTML(;
-    const $ = function (id) { return document.getElementById(id); };
-
-    $('host').textContent = 'http://' + location.host;
-
-    function fmtUptime(sec) {
-      sec = Math.floor(sec);
-      const h = Math.floor(sec / 3600);
-      const m = Math.floor((sec % 3600) / 60);
-      const s = sec % 60;
-      return (h > 0 ? h + 'h ' : '') + m + 'm ' + s + 's';
-    }
-
-    function setBadge(online, valid, locked) {
-      const badge = $('badge');
-      if (locked) {
-        badge.textContent = 'Trial expired';
-        badge.className = 'badge off';
-      } else if (online && valid) {
-        badge.textContent = 'Live';
-        badge.className = 'badge';
-      } else if (online) {
-        badge.textContent = 'Menunggu timbangan';
-        badge.className = 'badge';
-      } else {
-        badge.textContent = 'ESP32 offline';
-        badge.className = 'badge off';
-      }
-    }
-
-    function fmtTrial(sec) {
-      sec = Math.max(0, Math.floor(sec));
-      if (sec <= 0) return 'expired';
-      const h = Math.floor(sec / 3600);
-      const m = Math.floor((sec % 3600) / 60);
-      const s = sec % 60;
-      if (h > 0) return h + 'h ' + m + 'm';
-      if (m > 0) return m + 'm ' + s + 's';
-      return s + 's';
-    }
-
-    function updateLicenseUI(d) {
-      const devEl = $('deviceId');
-      const id = d.deviceId || '';
-      if (devEl.value !== id) devEl.value = id;
-
-      const pill = $('licensePill');
-      const locked = !!d.locked;
-      $('lockNote').style.display = locked ? 'block' : 'none';
-
-      if (d.license === 'licensed') {
-        pill.textContent = 'Licensed';
-        pill.className = 'pill licensed';
-        $('trialLeft').textContent = 'Unlimited';
-        $('activateArea').style.display = 'none';
-        $('licensedMsg').style.display = 'block';
-      } else {
-        $('licensedMsg').style.display = 'none';
-        $('activateArea').style.display = 'block';
-        $('trialLeft').textContent = (d.license === 'expired')
-          ? 'expired'
-          : fmtTrial(d.trialRemaining);
-        pill.textContent = (d.license === 'expired') ? 'Expired' : 'Trial';
-        pill.className = 'pill ' + ((d.license === 'expired') ? 'expired' : 'trial');
-      }
-    }
-
-    function showMsg(text, ok) {
-      const el = $('activateMsg');
-      el.textContent = text;
-      el.className = 'msg' + (ok === true ? ' ok' : (ok === false ? ' err' : ''));
-    }
-
-    function activateLicense() {
-      const input = $('keyInput');
-      const btn = $('activateBtn');
-      const key = input.value.trim();
-
-      if (!key) {
-        showMsg('Paste the activation key first.', false);
-        return;
-      }
-
-      btn.disabled = true;
-      input.disabled = true;
-      showMsg('Checking key...', null);
-
-      fetch('/api/activate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: 'key=' + encodeURIComponent(key)
-      })
-        .then(function (r) {
-          return r.json().then(function (d) { return { ok: r.ok, data: d }; });
-        })
-        .then(function (res) {
-          if (res.ok && res.data.ok) {
-            input.value = '';
-            showMsg('Activated. Thank you!', true);
-            poll();
-          } else {
-            showMsg(res.data.error || 'Invalid key for this device.', false);
-          }
-        })
-        .catch(function () {
-          showMsg('Connection error. Try again.', false);
-        })
-        .finally(function () {
-          btn.disabled = false;
-          input.disabled = false;
-        });
-    }
-
-    function copyDeviceId(btn) {
-      const el = $('deviceId');
-      const old = btn.textContent;
-      el.readOnly = false;
-      el.select();
-      el.setSelectionRange(0, el.value.length);
-      let copied = false;
-      try {
-        copied = document.execCommand('copy');
-      } catch (e) {
-        copied = false;
-      }
-      el.readOnly = true;
-      btn.textContent = copied ? 'COPIED' : 'SELECT';
-      setTimeout(function () { btn.textContent = old; }, 1500);
-    }
-
-    function poll() {
-      fetch('/api/status', { cache: 'no-store' })
-        .then(function (r) {
-          if (!r.ok) throw new Error('HTTP ' + r.status);
-          return r.json();
-        })
-        .then(function (d) {
-          const weightEl = $('weight');
-          const valueBox = $('valueBox');
-          if (d.valid) {
-            weightEl.textContent = d.weight.toFixed(1);
-            valueBox.className = 'value';
-          } else {
-            weightEl.textContent = '--';
-            valueBox.className = 'value stale';
-          }
-
-          $('raw').textContent = d.raw || '-';
-          $('frames').textContent = d.frames;
-          $('age').textContent = d.age < 0
-            ? 'no data'
-            : (d.age / 1000).toFixed(1) + ' s ago';
-          $('uptime').textContent = fmtUptime(d.uptime);
-          updateLicenseUI(d);
-
-          setBadge(true, d.valid, d.locked);
-        })
-        .catch(function () {
-          $('weight').textContent = '--';
-          $('valueBox').className = 'value stale';
-          setBadge(false, false, false);
-        });
-    }
-
-    poll();
-    setInterval(poll, POLL_MS);
-  </script>
-</body>
-</html>)HTML";
 
 // ============================================================================
 // Scale frame parsing
@@ -579,7 +186,7 @@ static void handleStatus() {
   const bool locked = licenseIsLocked();
 
   String json;
-  json.reserve(384);
+  json.reserve(640);
   json += F("{\"weight\":");
   json += String(locked ? 0.0f : currentWeight, 1);
   json += F(",\"valid\":");
@@ -609,6 +216,26 @@ static void handleStatus() {
   json += String(licenseTrialTotalSec());
   json += F(",\"locked\":");
   json += locked ? F("true") : F("false");
+  json += F(",\"staConnected\":");
+  json += netStaConnected() ? F("true") : F("false");
+  json += F(",\"staConfigured\":");
+  json += netStaConfigured() ? F("true") : F("false");
+  json += F(",\"staStatus\":\"");
+  appendJsonEscaped(json, netStaStatus().c_str());
+  json += F("\",\"staIp\":\"");
+  appendJsonEscaped(json, netStaIP().c_str());
+  json += F("\",\"rssi\":");
+  json += String(netRssi());
+  json += F(",\"cloudConfigured\":");
+  json += settingsSheetConfigured() ? F("true") : F("false");
+  json += F(",\"lastUploadAge\":");
+  json += String(sheetsLastUploadAgeMs());
+  json += F(",\"lastUploadOk\":");
+  json += sheetsLastUploadOk() ? F("true") : F("false");
+  json += F(",\"uploadOk\":");
+  json += String(sheetsUploadOkCount());
+  json += F(",\"uploadFail\":");
+  json += String(sheetsUploadFailCount());
   json += F("}");
 
   server.sendHeader("Cache-Control", "no-store");
@@ -652,8 +279,28 @@ static void handleLog() {
 }
 
 static void handleDebug() {
+  const String page =
+      renderPage("A12E Debug Log", "debug", DEBUG_BODY, DEBUG_SCRIPT);
   server.sendHeader("Cache-Control", "no-store");
-  server.send_P(200, "text/html", DEBUG_HTML);
+  server.send(200, "text/html", page);
+}
+
+static bool isApClient() {
+  const IPAddress clientIp = server.client().remoteIP();
+  return clientIp[0] == 192 && clientIp[1] == 168 && clientIp[2] == 4;
+}
+
+static void handleConfig() {
+  if (!isApClient()) {
+    server.send(403, "text/plain",
+                "Config is available only from the device AP (192.168.4.1).");
+    return;
+  }
+
+  const String page =
+      renderPage("A12E Config", "config", CONFIG_BODY, CONFIG_SCRIPT);
+  server.sendHeader("Cache-Control", "no-store");
+  server.send(200, "text/html", page);
 }
 
 static void handleActivate() {
@@ -677,9 +324,152 @@ static void handleActivate() {
   server.send(code, "application/json", body);
 }
 
-static void handleRoot() {
+static bool isConfigRequest() {
+  return isApClient() && server.header("X-Requested-With") == "A12E";
+}
+
+static void handleSettingsGet() {
+  if (!isApClient()) {
+    server.send(403, "application/json",
+                "{\"ok\":false,\"error\":\"Config is only available from the AP\"}");
+    return;
+  }
+
+  const SettingsData &s = settingsGet();
+
+  String json;
+  json.reserve(640);
+  json += F("{\"apSsid\":\"");
+  appendJsonEscaped(json, s.apSsid.c_str());
+  json += F("\",\"apPassSet\":");
+  json += s.apPass.length() > 0 ? F("true") : F("false");
+  json += F(",\"staSsid\":\"");
+  appendJsonEscaped(json, s.staSsid.c_str());
+  json += F("\",\"staPassSet\":");
+  json += s.staPass.length() > 0 ? F("true") : F("false");
+  json += F(",\"sheetUrl\":\"");
+  appendJsonEscaped(json, s.sheetUrl.c_str());
+  json += F("\",\"sheetTokenSet\":");
+  json += s.sheetToken.length() > 0 ? F("true") : F("false");
+  json += F(",\"interval\":");
+  json += String(s.uploadIntervalSec);
+  json += F(",\"apIp\":\"");
+  appendJsonEscaped(json, netApIP().c_str());
+  json += F("\",\"staStatus\":\"");
+  appendJsonEscaped(json, netStaStatus().c_str());
+  json += F("\",\"staConnected\":");
+  json += netStaConnected() ? F("true") : F("false");
+  json += F(",\"staIp\":\"");
+  appendJsonEscaped(json, netStaIP().c_str());
+  json += F("\",\"rssi\":");
+  json += String(netRssi());
+  json += F(",\"staConfigured\":");
+  json += netStaConfigured() ? F("true") : F("false");
+  json += F(",\"sheetConfigured\":");
+  json += settingsSheetConfigured() ? F("true") : F("false");
+  json += F("}");
+
   server.sendHeader("Cache-Control", "no-store");
-  server.send_P(200, "text/html", INDEX_HTML);
+  server.send(200, "application/json", json);
+}
+
+static void handleSettingsPost() {
+  if (!isConfigRequest()) {
+    server.send(403, "application/json", "{\"ok\":false,\"error\":\"Forbidden\"}");
+    return;
+  }
+
+  SettingsData next = settingsGet();
+
+  next.apSsid = server.arg("apSsid");
+  next.apSsid.trim();
+  if (server.hasArg("apPass") && server.arg("apPass").length() > 0) {
+    next.apPass = server.arg("apPass");
+  }
+
+  next.staSsid = server.arg("staSsid");
+  next.staSsid.trim();
+  if (server.hasArg("staPass") && server.arg("staPass").length() > 0) {
+    next.staPass = server.arg("staPass");
+  }
+
+  next.sheetUrl = server.arg("sheetUrl");
+  next.sheetUrl.trim();
+  if (server.hasArg("sheetToken") && server.arg("sheetToken").length() > 0) {
+    next.sheetToken = server.arg("sheetToken");
+  }
+
+  if (server.hasArg("interval")) {
+    next.uploadIntervalSec = server.arg("interval").toInt();
+  }
+
+  String error;
+  bool apChanged = false;
+  bool staChanged = false;
+  bool sheetChanged = false;
+
+  if (!settingsSave(next, error, apChanged, staChanged, sheetChanged)) {
+    String body = F("{\"ok\":false,\"error\":\"");
+    appendJsonEscaped(body, error.c_str());
+    body += F("\"}");
+    server.send(400, "application/json", body);
+    return;
+  }
+
+  if (apChanged) {
+    netScheduleReboot(1800);
+  } else if (staChanged) {
+    netRestartSta();
+  }
+
+  if (sheetChanged || staChanged) {
+    sheetsResetSchedule();
+  }
+
+  String body = F("{\"ok\":true,\"reboot\":");
+  body += apChanged ? F("true") : F("false");
+  body += F("}");
+  server.sendHeader("Cache-Control", "no-store");
+  server.send(200, "application/json", body);
+}
+
+static void handleScan() {
+  if (!isConfigRequest()) {
+    server.send(403, "application/json", "{\"ok\":false,\"error\":\"Forbidden\"}");
+    return;
+  }
+
+  server.sendHeader("Cache-Control", "no-store");
+  server.send(200, "application/json", netScanJson());
+}
+
+static void handleSheetTest() {
+  if (!isConfigRequest()) {
+    server.send(403, "application/json", "{\"ok\":false,\"error\":\"Forbidden\"}");
+    return;
+  }
+
+  String message;
+  int httpCode = 0;
+  const bool ok = sheetsTest(message, httpCode);
+
+  String body = F("{\"ok\":");
+  body += ok ? F("true") : F("false");
+  body += F(",\"code\":");
+  body += String(httpCode);
+  body += F(",\"message\":\"");
+  appendJsonEscaped(body, message.c_str());
+  body += F("\"}");
+
+  server.sendHeader("Cache-Control", "no-store");
+  server.send(200, "application/json", body);
+}
+
+static void handleRoot() {
+  const String page =
+      renderPage("A12E Scale Monitor", "monitor", MONITOR_BODY, MONITOR_SCRIPT);
+  server.sendHeader("Cache-Control", "no-store");
+  server.send(200, "text/html", page);
 }
 
 static void handleNotFound() {
@@ -689,25 +479,6 @@ static void handleNotFound() {
 // ============================================================================
 // Setup
 // ============================================================================
-
-static void startAccessPoint() {
-  WiFi.mode(WIFI_AP);
-
-  const bool ok = (strlen(WIFI_AP_PASSWORD) >= 8)
-                      ? WiFi.softAP(WIFI_AP_SSID, WIFI_AP_PASSWORD)
-                      : WiFi.softAP(WIFI_AP_SSID);
-
-  LOG.println("[WIFI] Starting Access Point...");
-  if (!ok) {
-    LOG.println("[WIFI] ERROR: softAP failed");
-    return;
-  }
-
-  const IPAddress ip = WiFi.softAPIP();
-  LOG.println("[WIFI] SSID: " + String(WIFI_AP_SSID));
-  LOG.println("[WIFI] Password: " + String(strlen(WIFI_AP_PASSWORD) ? WIFI_AP_PASSWORD : "(open)"));
-  LOG.println("[WIFI] Open http://" + ip.toString() + " on your phone");
-}
 
 void setup() {
   Serial.begin(DEBUG_BAUD_RATE);
@@ -725,15 +496,22 @@ void setup() {
 
   ScaleSerial.begin(SCALE_BAUD_RATE, SERIAL_8N1, SCALE_RX_PIN, SCALE_TX_PIN);
 
-  startAccessPoint();
+  settingsBegin();
   licenseBegin();
+  netBegin();
+  sheetsBegin();
 
   server.on("/", HTTP_GET, handleRoot);
   server.on("/debug", HTTP_GET, handleDebug);
+  server.on("/config", HTTP_GET, handleConfig);
   server.on("/api/status", HTTP_GET, handleStatus);
   server.on("/api/log", HTTP_GET, handleLog);
   server.on("/api/activate", HTTP_GET, handleActivate);
   server.on("/api/activate", HTTP_POST, handleActivate);
+  server.on("/api/settings", HTTP_GET, handleSettingsGet);
+  server.on("/api/settings", HTTP_POST, handleSettingsPost);
+  server.on("/api/wifi/scan", HTTP_POST, handleScan);
+  server.on("/api/sheets/test", HTTP_POST, handleSheetTest);
   server.on("/favicon.ico", HTTP_GET, []() { server.send(204); });
   server.onNotFound(handleNotFound);
   server.begin();
@@ -746,6 +524,8 @@ void loop() {
   readScale();
   licenseLoop();
   server.handleClient();
+  netLoop();
+  sheetsLoop(currentWeight, weightValid && isScaleOnline());
 
   if (millis() - lastLogMs >= 1000UL) {
     lastLogMs = millis();

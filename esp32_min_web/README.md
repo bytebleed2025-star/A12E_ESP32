@@ -22,7 +22,10 @@ This version also includes a **sellable licensing system**:
 ## Features
 
 - Live weight on a responsive web page (updates every 500 ms)
-- Own WiFi Access Point (no router needed)
+- **Modern 3-tab UI: Monitor / Debug / Config**
+- Own WiFi Access Point + optional **STA** connection to your router (2.4 GHz)
+- **Google Sheets logging** every configurable interval
+- **Config tab**: AP settings, router WiFi scan, Google Sheets URL/token
 - Read-only: no outputs are controlled
 - Embedded HTML — **no `uploadfs` step**, only firmware upload
 - **No external libraries** — Arduino ESP32 core only
@@ -79,6 +82,9 @@ All settings are in two headers:
 | `SCALE_UART_NUM` | `1` | UART1 (USB debug stays on UART0) |
 | `SCALE_TIMEOUT_MS` | `3000` | Data older than this = "waiting for scale" |
 | `STATUS_UPDATE_INTERVAL` | `500` | Browser polling interval (ms) |
+| `SHEET_UPLOAD_INTERVAL_MS` | `60000` | Default Google Sheets upload interval |
+| `SHEET_HTTP_TIMEOUT_MS` | `10000` | HTTPS timeout |
+| `SHEET_TIMEZONE` | `WIB-7` | POSIX timezone for NTP timestamps |
 
 ### [`include/license_config.h`](include/license_config.h) — licensing
 
@@ -87,6 +93,12 @@ All settings are in two headers:
 | `LICENSE_TRIAL_SECONDS` | `10800` | Trial length = **3 h** of powered-on use (86400 = 24 h) |
 | `LICENSE_SAVE_INTERVAL_SEC` | `300` | Trial counter write interval (flash wear) |
 | `LICENSE_PUBLIC_KEY_PEM` | (generated) | Public key used to verify activation keys |
+
+Runtime settings (AP SSID/password, router WiFi, Google Sheets URL/token,
+upload interval) are edited in the **Config** tab and saved to NVS.
+`sta_secrets.h` is only used as initial factory defaults on a fresh board; it is
+gitignored. Copy `sta_secrets.example.h` to `sta_secrets.h` if you want to bake
+in defaults, or leave the placeholders and configure everything from the page.
 
 ---
 
@@ -126,14 +138,17 @@ Expected serial output:
 ```
 ========================================
    A12E SCALE MONITOR (minimal)
-   Firmware v1.0.0
+   Firmware v1.2.0
 ========================================
 [SCALE] UART1  RX=GPIO21  TX=GPIO22  9600 8N1
-[WIFI] Starting Access Point...
-[WIFI] SSID: A12E_SCALE_MONITOR
-[WIFI] Open http://192.168.4.1 on your phone
+[CFG] AP SSID: A12E_SCALE_MONITOR
+[CFG] STA SSID: (not configured)
+[CFG] Google Sheets: not configured
 [LIC] Device ID: A12E-A1B2C3D4E5F6
-[LIC] Status: TRIAL, 23h 59m remaining
+[LIC] Status: TRIAL, 2h 59m remaining
+[NET] AP IP: 192.168.4.1
+[NET] Router WiFi not configured - AP-only mode
+[SHEET] Not configured - open http://192.168.4.1/config
 [WEB] Server started on port 80
 [SYSTEM] Ready - waiting for scale frames
 [SCALE] 4.3 kg  (frames=12, bad=0)
@@ -148,13 +163,89 @@ Expected serial output:
    `33333333`).
 3. Open **http://192.168.4.1**.
 4. The page shows the live weight, raw serial frame, frame count, uptime, the
-   **Device ID**, and the **trial countdown**.
+   **Device ID**, the **trial countdown**, and the cloud-upload status.
+5. Use the top tabs: **Monitor**, **Debug**, **Config**.
+
+---
+
+## Config tab (`/config`)
+
+Open **http://192.168.4.1/config** (or tap **Config**).
+
+| Section | What you can change |
+|---|---|
+| Access Point | AP SSID and password |
+| Router WiFi (STA) | Router SSID/password, with **Scan** button |
+| Google Sheets | Apps Script URL, shared token, upload interval |
+| Device status | AP IP, STA status/IP, RSSI, sheet configured, interval |
+
+Important behaviour:
+
+- **AP settings** (SSID/password) require a reboot. The page saves and reboots
+  in about 2 seconds; reconnect to the new AP and open `192.168.4.1` again.
+- **Router WiFi** (STA) changes apply live; the AP stays active.
+- **Google Sheets** settings apply immediately; use **Send test row** to verify.
+- Settings are stored in NVS and survive reboots and normal firmware uploads.
+  They are erased by a full flash erase.
+- AP clients **do not** get internet through the ESP32. The ESP32 itself has
+  internet via STA and uploads data; the phone keeps using mobile data for the
+  activation website.
+- ESP32 WiFi is **2.4 GHz only** (not 5 GHz).
+
+Passwords and the Sheets token are never returned by the API; the Config page
+shows “leave blank to keep current”.
+
+---
+
+## Google Sheets upload (AP+STA)
+
+The board can connect to your router while keeping its own AP active:
+
+```
+Scale -> ESP32 -> (STA) -> Router -> Internet -> Google Apps Script -> Sheet
+                    |
+                    +-> (AP) -> phone: http://192.168.4.1
+```
+
+### One-time Google setup
+
+See [`../google-sheets/README.md`](../google-sheets/README.md). Short version:
+
+1. Create a Google Sheet.
+2. Extensions → Apps Script → paste [`Code.gs`](../google-sheets/Code.gs).
+3. Set a long random `TOKEN`.
+4. Deploy as **Web app** → execute as **Me** → access **Anyone**.
+5. Copy the `/exec` URL.
+
+### On the monitor
+
+1. Open **Config**.
+2. Under **Router WiFi**, press **Scan**, pick your 2.4 GHz network, enter the
+   password.
+3. Paste the Apps Script `/exec` URL and the same token.
+4. Set the upload interval (seconds), then **Save & apply**.
+5. Press **Send test row** — a row should appear in the sheet.
+
+The board uploads one row per interval **only when**:
+
+- the scale has a fresh valid weight, and
+- the license is not locked (trial running or licensed).
+
+After the trial expires, cloud uploads pause until activation. The Config page
+and test row still work.
+
+Sheet columns: **Received At, Device ID, Weight (kg), License, RSSI, Uptime (s),
+Device Time, Test**.
+
+> TLS note: this version uses `setInsecure()` for the Google HTTPS connection.
+> For a production fleet, embed the Google Trust Services root CA and enable
+> certificate validation.
 
 ---
 
 ## Debug log (`/debug`)
 
-At the bottom of the monitor page there is an **Open debug log** link, or open:
+Open the **Debug** tab, or:
 
 ```
 http://192.168.4.1/debug
@@ -164,7 +255,9 @@ It shows the last **48 lines** from the ESP32:
 
 - boot banner and firmware version
 - WiFi AP startup
+- router WiFi / STA connect and disconnect
 - license / trial state and activation results
+- Google Sheets test/upload results
 - scale frames, including the raw RS232 frame
 
 The same lines are still written to the **USB serial port at 115200 baud**, so
@@ -354,6 +447,16 @@ What it protects well:
 - Keys cannot be edited without invalidating the ECDSA signature.
 - Normal firmware updates do not reset the trial (NVS is preserved).
 
+Web/Config security:
+
+- The **Config tab and its APIs only accept clients on the device AP**
+  (`192.168.4.x`). Clients on the router LAN get `403 Forbidden`.
+- The AP password is the only protection for the Config tab. Use a strong AP
+  password, especially in shared locations.
+- WiFi passwords and the Google Sheets token are stored in NVS. A full flash
+  erase removes them; normal firmware updates keep them.
+- Debug logs never include passwords, tokens, or activation keys.
+
 Known limits:
 
 - **A full flash erase resets the trial.** The trial state must live on the
@@ -380,11 +483,19 @@ If you need stronger protection:
 
 | Endpoint | Description |
 |----------|-------------|
-| `GET /` | Web page (embedded HTML) |
+| `GET /` | Monitor page |
 | `GET /debug` | Debug log page (RAM buffer, local only) |
+| `GET /config` | Config page (AP / STA / Google Sheets) |
 | `GET /api/status` | JSON status |
 | `GET /api/log?since=N` | Recent log lines as JSON |
 | `GET /api/activate?key=...` | Activate a key (also accepts `POST key=...`) |
+| `GET /api/settings` | Current settings + STA status (secrets omitted) |
+| `POST /api/settings` | Save AP / STA / Sheets settings |
+| `POST /api/wifi/scan` | Scan nearby WiFi networks |
+| `POST /api/sheets/test` | Send a test row to Google Sheets |
+
+`POST /api/settings`, `/api/wifi/scan`, and `/api/sheets/test` require the
+header `X-Requested-With: A12E` (the Config page sends it automatically).
 
 Example `/api/status`:
 
@@ -399,15 +510,27 @@ Example `/api/status`:
   "raw": "W 00004.3 kg",
   "deviceId": "A12E-A1B2C3D4E5F6",
   "license": "trial",
-  "trialRemaining": 82800,
-  "trialTotal": 86400,
-  "locked": false
+  "trialRemaining": 10000,
+  "trialTotal": 10800,
+  "locked": false,
+  "staConnected": true,
+  "staConfigured": true,
+  "staStatus": "connected",
+  "staIp": "192.168.1.42",
+  "rssi": -58,
+  "cloudConfigured": true,
+  "lastUploadAge": 12000,
+  "lastUploadOk": true,
+  "uploadOk": 12,
+  "uploadFail": 0
 }
 ```
 
 - `license` — `trial`, `licensed`, or `expired`
 - `locked` — `true` after the trial ends with no key; weight is withheld
 - `trialRemaining` / `trialTotal` — seconds
+- `staStatus` — `connected`, `connecting`, `offline`, or `not configured`
+- `lastUploadAge` — ms since the last Sheets attempt, or `-1` if never
 
 Activation response:
 
@@ -462,23 +585,33 @@ so line noise cannot corrupt the displayed weight.
 esp32_min_web/
 ├── platformio.ini            # standalone build config (no lib_deps)
 ├── include/
-│   ├── config.h              # WiFi AP, pins, baud rate, timings
-│   └── license_config.h      # trial length + embedded public key
+│   ├── config.h              # AP defaults, pins, timing, cloud interval
+│   ├── license_config.h      # trial length + embedded public key
+│   └── sta_secrets.example.h # optional factory defaults
 ├── src/
-│   ├── main.cpp              # RS232 parser + embedded web UI + HTTP server
-│   ├── debug_page.h          # /debug page HTML
-│   ├── log.h
-│   ├── log.cpp               # in-RAM log ring buffer + Serial tee
-│   ├── license.h
-│   └── license.cpp           # trial counter, NVS, ECDSA verification
+│   ├── main.cpp              # RS232 parser + HTTP routes
+│   ├── settings.h / .cpp     # NVS settings: AP, STA, Sheets
+│   ├── net.h / .cpp          # AP+STA WiFi, scan, NTP
+│   ├── sheets.h / .cpp       # Google Sheets uploader
+│   ├── license.h / .cpp      # trial, NVS, ECDSA verification
+│   ├── log.h / .cpp          # RAM log ring buffer + Serial tee
+│   ├── web_ui.h              # shared modern CSS + page shell
+│   ├── monitor_page.h        # Monitor tab
+│   ├── debug_page.h          # Debug tab
+│   └── config_page.h         # Config tab
 ├── tools/
 │   ├── make_license.js       # generate customer activation keys
 │   ├── generate_keypair.js   # create a new keypair (rare)
 │   ├── license_private.pem   # SECRET - gitignored, never ship
 │   └── license_public.pem    # public half (also embedded in firmware)
-├── .gitignore                # keeps the private key out of git
+├── .gitignore                # keeps secrets and build files out of git
 └── README.md
 ```
 
-No `data/` folder and no `uploadfs`: the HTML lives inside `main.cpp` in
-`PROGMEM`.
+Related folders in the repository:
+
+- `../license-server` — Cloudflare Worker + D1 activation site
+- `../google-sheets` — Apps Script logger
+
+No `data/` folder and no `uploadfs`: the web UI is compiled into the
+firmware. Settings live in NVS and are edited from the Config tab.
