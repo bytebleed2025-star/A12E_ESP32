@@ -144,7 +144,7 @@ npm run deploy
 Wrangler prints your URL, for example:
 
 ```
-https://a12e-license.your-subdomain.workers.dev
+https://a12e-license.esp32dev-by-shd.workers.dev
 ```
 
 Open:

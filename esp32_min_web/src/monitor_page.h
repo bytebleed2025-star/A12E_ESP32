@@ -74,7 +74,7 @@ static const char MONITOR_BODY[] = R"HTML(
             <div class="field"><span>Need a key? Activation page</span>
               <div class="row">
                 <input id="buyUrl" readonly
-                       value="https://a12e-license.a12e-scale.workers.dev/activate">
+                       value="https://a12e-license.esp32dev-by-shd.workers.dev/activate">
                 <button class="btn secondary small" type="button"
                         onclick="copyBuyLink(this)">Copy link</button>
               </div>

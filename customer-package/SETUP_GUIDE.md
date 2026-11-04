@@ -19,7 +19,7 @@ readings to Google Sheets.
 SHA256 of the `.bin`:
 
 ```
-C57AB6A78F7C3D27942E02A4A4C711504A4D80DC79C64317594F63488212EA56
+EE3058A4AD1097E0EAB34E85E3C3CD2477707BD15C6C33865F371801077B73DD
 ```
 
 > This is a **merged factory image**. Do not use the small `firmware.bin` from a
@@ -216,7 +216,7 @@ To continue:
 2. On your phone, use **mobile data** (disconnect from the ESP32 WiFi) and open:
 
    ```
-   https://a12e-license.a12e-scale.workers.dev/activate
+   https://a12e-license.esp32dev-by-shd.workers.dev/activate
    ```
 
 3. Enter the Device ID and your WhatsApp number.
