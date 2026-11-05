@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>A12E Scale Monitor — Customer Setup Guide</title>
+<title>A12E Scale Monitor â€” Customer Setup Guide</title>
 <style>
   :root {
     --ink: #1f2433;
@@ -163,7 +163,7 @@
       <div>A12E SCALE MONITOR</div>
     </div>
     <h1>Customer Setup Guide</h1>
-    <p class="subtitle">ESP32 · 3-hour trial · Local web monitor · Optional Google Sheets</p>
+    <p class="subtitle">ESP32 Â· 3-hour trial Â· Local web monitor Â· Optional Google Sheets</p>
     <div class="chips">
       <span class="chip">Firmware 1.2.0</span>
       <span class="chip">AP + STA</span>
@@ -188,7 +188,7 @@
     </table>
 
     <p><strong>SHA256 of the <code>.bin</code>:</strong></p>
-    <pre><code>EE3058A4AD1097E0EAB34E85E3C3CD2477707BD15C6C33865F371801077B73DD</code></pre>
+    <pre><code>44969CF54DDFB6195A1239E2B1404000CBA6CF24919A8F4CCCDFBB1901BC50BF</code></pre>
 
     <div class="callout info">
       <strong>Factory image</strong>
@@ -212,17 +212,18 @@
       </div>
       <div class="card">
         <h4>Drivers</h4>
-        <p>CP210x (Silicon Labs), CH340/CH341 (WCH), or FTDI — match your board.</p>
+        <p>CP210x (Silicon Labs), CH340/CH341 (WCH), or FTDI â€” match your board.</p>
       </div>
     </div>
 
     <h2>3. Flash the firmware</h2>
     <div class="callout warn">
-      <strong>Erase the flash first.</strong>
-      This resets the 3-hour trial to a clean start and removes any old settings.
+      <strong>Erasing does not reset the trial.</strong>
+      It gives a clean install and removes old settings, but the trial token is
+      claimed once per Device ID from the A12E license server.
     </div>
 
-    <h3>Option A — ESP Flash Download Tool (Windows)</h3>
+    <h3>Option A â€” ESP Flash Download Tool (Windows)</h3>
     <div class="step">
       <div class="step-num">1</div>
       <div class="step-body">
@@ -267,7 +268,7 @@
       </div>
     </div>
 
-    <h3>Option B — esptool (Windows/macOS/Linux)</h3>
+    <h3>Option B â€” esptool (Windows/macOS/Linux)</h3>
     <pre><code># Replace COM3 with your port (Windows) or /dev/ttyUSB0 (Linux/macOS)
 esptool.py --chip esp32 --port COM3 erase_flash
 esptool.py --chip esp32 --port COM3 --baud 921600 write_flash 0x0 A12E_SCALE_MONITOR_3H_TRIAL_CLOUD_FACTORY.bin</code></pre>
@@ -299,7 +300,7 @@ esptool.py --chip esp32 --port COM3 --baud 921600 write_flash 0x0 A12E_SCALE_MON
 
     <div class="callout danger">
       <strong>Never connect RS232 voltage levels directly to the ESP32.</strong>
-      RS232 can be ±12 V and will damage the board. Use a MAX232 (or equivalent).
+      RS232 can be Â±12 V and will damage the board. Use a MAX232 (or equivalent).
     </div>
 
     <h2>5. Open the monitor page</h2>
@@ -330,9 +331,9 @@ esptool.py --chip esp32 --port COM3 --baud 921600 write_flash 0x0 A12E_SCALE_MON
       <div class="step-body">
         <p>Use the tabs:</p>
         <ul>
-          <li><strong>Monitor</strong> — live weight and license</li>
-          <li><strong>Debug</strong> — last 48 log lines for support</li>
-          <li><strong>Config</strong> — WiFi and Google Sheets settings</li>
+          <li><strong>Monitor</strong> â€” live weight and license</li>
+          <li><strong>Debug</strong> â€” last 48 log lines for support</li>
+          <li><strong>Config</strong> â€” WiFi and Google Sheets settings</li>
         </ul>
       </div>
     </div>
@@ -343,7 +344,7 @@ esptool.py --chip esp32 --port COM3 --baud 921600 write_flash 0x0 A12E_SCALE_MON
       <strong>Debug</strong> tab to see received frames and errors.
     </div>
 
-    <h2>6. Optional — upload to Google Sheets</h2>
+    <h2>6. Optional â€” upload to Google Sheets</h2>
     <p>
       The board keeps its own WiFi AP <strong>and</strong> can connect to your
       router at the same time. The ESP32 uploads the data; your phone does
@@ -393,12 +394,26 @@ esptool.py --chip esp32 --port COM3 --baud 921600 write_flash 0x0 A12E_SCALE_MON
       (<code>192.168.4.1</code>). Devices on your router LAN cannot change settings.
     </div>
 
-    <h2>7. After the 3-hour trial</h2>
+    <h2>7. Trial and activation</h2>
+    <p>
+      The trial is a <strong>one-time signed token</strong>. Claim it once:
+      connect to <code>A12E_SCALE_MONITOR</code>, open
+      <code>http://192.168.4.1</code>, copy the <strong>Device ID</strong>, then
+      on mobile data open:
+    </p>
+    <pre><code>https://a12e-license.esp32dev-by-shd.workers.dev/trial</code></pre>
+    <p>
+      Enter the Device ID, copy the long <strong>trial token</strong>, reconnect
+      to the monitor, paste it into <strong>Trial token</strong> and press
+      <strong>Claim trial</strong>. Erasing the flash does not create a new
+      trial.
+    </p>
     <p>
       The trial counts <strong>powered-on time</strong>, not wall-clock time.
       Turning the board off pauses the countdown. When it reaches zero, the
       page locks and hides the weight.
     </p>
+    <p><strong>For a permanent key:</strong></p>
     <div class="step">
       <div class="step-num">1</div>
       <div class="step-body"><p>Copy the <strong>Device ID</strong> from the monitor page.</p></div>
@@ -438,7 +453,7 @@ esptool.py --chip esp32 --port COM3 --baud 921600 write_flash 0x0 A12E_SCALE_MON
         <p>Reconnect to <code>A12E_SCALE_MONITOR</code>, open <code>http://192.168.4.1</code>, paste the key into the <strong>License</strong> box, and press <strong>Activate</strong>.</p>
         <ul>
           <li>Paste the <strong>long activation key</strong> from the order page (it starts with <code>QTEy...</code>), <strong>not the Device ID</strong>.</li>
-          <li>You must be connected to the ESP32 AP when pressing <strong>Activate</strong>. On mobile data the page cannot reach the ESP32 and can hang at “checking key”.</li>
+          <li>You must be connected to the ESP32 AP when pressing <strong>Activate</strong>. On mobile data the page cannot reach the ESP32 and can hang at â€œchecking keyâ€.</li>
         </ul>
       </div>
     </div>
@@ -455,18 +470,18 @@ esptool.py --chip esp32 --port COM3 --baud 921600 write_flash 0x0 A12E_SCALE_MON
       <tr><td>Flashing fails to connect</td><td>Hold BOOT, tap EN, release BOOT, retry; try 115200 baud</td></tr>
       <tr><td>AP <code>A12E_SCALE_MONITOR</code> not visible</td><td>Press EN/RST; check 5 V power; wait a few seconds</td></tr>
       <tr><td>Page shows <code>--</code> and no frames</td><td>RS232 wiring, GND, MAX232, 9600 baud</td></tr>
-      <tr><td>Weight is 10× / 100× off</td><td>Check the <strong>Raw frame</strong> on the Monitor tab</td></tr>
+      <tr><td>Weight is 10Ã— / 100Ã— off</td><td>Check the <strong>Raw frame</strong> on the Monitor tab</td></tr>
       <tr><td>Cloud not uploading</td><td>2.4 GHz WiFi, signal, URL/token, <strong>Send test row</strong></td></tr>
-      <tr><td>Activate says “checking key” forever</td><td>You are not connected to the ESP32 AP. Reconnect to <code>A12E_SCALE_MONITOR</code>, reload <code>192.168.4.1</code>, and paste the <strong>long key</strong>, not the Device ID.</td></tr>
+      <tr><td>Activate says â€œchecking keyâ€ forever</td><td>You are not connected to the ESP32 AP. Reconnect to <code>A12E_SCALE_MONITOR</code>, reload <code>192.168.4.1</code>, and paste the <strong>long key</strong>, not the Device ID.</td></tr>
       <tr><td>Config tab says 403</td><td>You must be connected to the ESP32 AP, not the router LAN</td></tr>
-      <tr><td>Trial reset unexpectedly</td><td>A full flash erase resets the trial to 3 h; a normal reflash keeps it</td></tr>
+      <tr><td>Trial already claimed</td><td>Erasing flash does not reset the server claim; use another Device ID or contact support</td></tr>
       <tr><td>Forgot AP password</td><td>Set it again from Config while connected; otherwise erase to restore <code>33333333</code></td></tr>
       <tr><td>Need support</td><td>Open <strong>Debug</strong>, press <strong>Copy</strong>, send the log to WhatsApp</td></tr>
     </table>
 
     <h2>9. Safety</h2>
     <ul>
-      <li>Never connect RS232 ±12 V directly to the ESP32. Use MAX232.</li>
+      <li>Never connect RS232 Â±12 V directly to the ESP32. Use MAX232.</li>
       <li>Use a stable 5 V supply; avoid weak USB chargers.</li>
       <li>Do not expose the board to water or high heat.</li>
       <li>Use a strong AP password if the board is in a shared location.</li>

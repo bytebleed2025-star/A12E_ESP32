@@ -42,6 +42,26 @@ test('non-JSON bodies are rejected with 415', async () => {
   assert.equal(response.status, 415);
 });
 
+test('trial page is served without touching D1', async () => {
+  const response = await worker.fetch(
+    new Request('https://example.test/trial'),
+    env,
+    {}
+  );
+  assert.equal(response.status, 200);
+  assert.match(await response.text(), /Claim your free trial/);
+});
+
+test('invalid trial device IDs are rejected with 400 before D1', async () => {
+  const response = await worker.fetch(
+    post('/api/trial', JSON.stringify({ deviceId: 'BAD' })),
+    env,
+    {}
+  );
+  assert.equal(response.status, 400);
+  assert.match((await response.json()).error, /Invalid Device ID/);
+});
+
 test('admin routes require auth and never touch D1 when unauthenticated', async () => {
   const response = await worker.fetch(
     new Request('https://example.test/api/admin/orders'),

@@ -16,3 +16,15 @@ CREATE TABLE IF NOT EXISTS orders (
 CREATE INDEX IF NOT EXISTS idx_orders_device  ON orders(device_id);
 CREATE INDEX IF NOT EXISTS idx_orders_status  ON orders(status);
 CREATE INDEX IF NOT EXISTS idx_orders_created ON orders(created_at);
+
+-- One-time trial tokens. A Device ID can claim only once; erasing the device
+-- NVS does not allow a second claim. Support can delete a row for RMA.
+CREATE TABLE IF NOT EXISTS trials (
+  device_id   TEXT PRIMARY KEY,
+  token       TEXT NOT NULL,
+  seconds     INTEGER NOT NULL,
+  contact     TEXT NOT NULL DEFAULT '',
+  created_at  INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_trials_created ON trials(created_at);

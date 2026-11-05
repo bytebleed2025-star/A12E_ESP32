@@ -1,6 +1,6 @@
-# A12E Scale Monitor — Customer Setup Guide
+# A12E Scale Monitor â€” Customer Setup Guide
 
-**Firmware 1.2.0 · 3-hour trial · Optional Google Sheets logging**
+**Firmware 1.2.0 Â· 3-hour trial Â· Optional Google Sheets logging**
 
 Thank you for trying the A12E Scale Monitor. This guide shows how to flash the
 firmware, connect your scale, use the local web page, and optionally upload
@@ -19,7 +19,7 @@ readings to Google Sheets.
 SHA256 of the `.bin`:
 
 ```
-EE3058A4AD1097E0EAB34E85E3C3CD2477707BD15C6C33865F371801077B73DD
+44969CF54DDFB6195A1239E2B1404000CBA6CF24919A8F4CCCDFBB1901BC50BF
 ```
 
 > This is a **merged factory image**. Do not use the small `firmware.bin` from a
@@ -44,10 +44,11 @@ EE3058A4AD1097E0EAB34E85E3C3CD2477707BD15C6C33865F371801077B73DD
 
 ## 3. Flash the firmware
 
-> **Important:** erase the flash first. This resets the 3-hour trial to a clean
-> start and removes any old settings.
+> **Important:** erasing gives a clean install and removes old settings, but it
+> does **not** reset the trial. The trial token is claimed once per Device ID
+> from the A12E license server.
 
-### Option A — ESP Flash Download Tool (Windows)
+### Option A â€” ESP Flash Download Tool (Windows)
 
 1. Download and open **ESP Flash Download Tool** from Espressif.
 2. Select **ESP32** and **Developer Mode**.
@@ -66,7 +67,7 @@ EE3058A4AD1097E0EAB34E85E3C3CD2477707BD15C6C33865F371801077B73DD
 7. Click **START** and wait for **FINISH**.
 8. Press the **EN/RST** button on the board once.
 
-### Option B — esptool (Windows/macOS/Linux)
+### Option B â€” esptool (Windows/macOS/Linux)
 
 Install Python and esptool, then:
 
@@ -96,14 +97,14 @@ Connect the scale/display RS232 output through a **MAX232** level shifter:
 
 | Signal | ESP32 | MAX232 | Scale DB9 |
 |---|---|---|---|
-| Scale TX → ESP32 RX | **GPIO21** | R1OUT ← RIN1 | pin 3 (TxD) |
-| ESP32 TX *(optional)* | GPIO22 | R1IN → NOUT1 | pin 2 (RxD) |
+| Scale TX â†’ ESP32 RX | **GPIO21** | R1OUT â† RIN1 | pin 3 (TxD) |
+| ESP32 TX *(optional)* | GPIO22 | R1IN â†’ NOUT1 | pin 2 (RxD) |
 | Ground | GND | GND | pin 5 (GND) |
 
 Serial format: **9600 baud, 8N1**.
 
-> ⚠️ **Never connect RS232 voltage levels directly to the ESP32.** RS232 can be
-> ±12 V and will damage the board. Use a MAX232 (or equivalent).
+> âš ï¸ **Never connect RS232 voltage levels directly to the ESP32.** RS232 can be
+> Â±12 V and will damage the board. Use a MAX232 (or equivalent).
 
 Power the board from a stable **5 V** supply.
 
@@ -131,16 +132,16 @@ Power the board from a stable **5 V** supply.
 
 4. Use the tabs:
 
-   - **Monitor** — live weight and license
-   - **Debug** — last 48 log lines, useful for support
-   - **Config** — WiFi and Google Sheets settings
+   - **Monitor** â€” live weight and license
+   - **Debug** â€” last 48 log lines, useful for support
+   - **Config** â€” WiFi and Google Sheets settings
 
 If the weight stays `--`, check the RS232 wiring, GND, baud rate (9600), and
 MAX232. Open **Debug** to see the received frames and errors.
 
 ---
 
-## 6. Optional — upload to Google Sheets
+## 6. Optional â€” upload to Google Sheets
 
 The board keeps its own WiFi AP **and** can connect to your router at the same
 time. The ESP32 uploads the data; your phone does **not** get internet through
@@ -151,7 +152,7 @@ the ESP32.
 ### 6.1 Create the Google Sheet
 
 1. Open <https://sheets.new> and name it (e.g. **A12E Scale Data**).
-2. In the sheet: **Extensions → Apps Script**.
+2. In the sheet: **Extensions â†’ Apps Script**.
 3. Delete the default code and paste the contents of `GoogleSheets_Code.gs`.
 4. Change:
 
@@ -159,18 +160,18 @@ the ESP32.
    const TOKEN = 'CHANGE_ME_TO_A_LONG_RANDOM_TOKEN';
    ```
 
-   to a long random string. Remember it — you will paste it into the monitor.
+   to a long random string. Remember it â€” you will paste it into the monitor.
 5. Save.
-6. **Project Settings** (gear) → **Time zone** → **Asia/Jakarta**.
+6. **Project Settings** (gear) â†’ **Time zone** â†’ **Asia/Jakarta**.
 
 ### 6.2 Deploy the Apps Script
 
-1. **Deploy → New deployment**.
+1. **Deploy â†’ New deployment**.
 2. Type: **Web app**.
 3. Description: `A12E logger`.
 4. **Execute as:** `Me`.
 5. **Who has access:** `Anyone`.
-6. **Deploy** → **Authorize access**.
+6. **Deploy** â†’ **Authorize access**.
 7. Copy the **Web app URL**. It ends with `/exec`:
 
    ```
@@ -205,12 +206,29 @@ Config page still work.
 
 ---
 
-## 7. After the 3-hour trial
+## 7. Trial and activation
 
-The trial counts **powered-on time**, not wall-clock time. Turning the board off
-pauses the countdown. When it reaches zero, the page locks and hides the weight.
+The trial is a **one-time signed token** from the A12E license server. Claim it
+once per Device ID:
 
-To continue:
+1. Connect to `A12E_SCALE_MONITOR`, open `http://192.168.4.1`, and copy the
+   **Device ID**.
+2. On your phone, use **mobile data** and open:
+
+   ```
+   https://a12e-license.esp32dev-by-shd.workers.dev/trial
+   ```
+
+3. Enter the Device ID, copy the long **trial token**.
+4. Reconnect to `A12E_SCALE_MONITOR`, paste it into **Trial token**, press
+   **Claim trial**. The weight appears and the badge shows **Trial**.
+
+Erasing the flash does not create a new trial — the server remembers the Device
+ID. The trial counts **powered-on time**, not wall-clock time. Turning the board
+off pauses the countdown. When it reaches zero, the page locks and hides the
+weight.
+
+For a permanent key:
 
 1. Copy the **Device ID** from the monitor page.
 2. On your phone, use **mobile data** (disconnect from the ESP32 WiFi) and open:
@@ -234,7 +252,7 @@ To continue:
      `QTEy...`), **not the Device ID**.
    - You must be connected to the ESP32 AP when you press **Activate**. If you
      are on mobile data, the page cannot reach the ESP32 and will show
-     “checking key” forever.
+     â€œchecking keyâ€ forever.
 
 The key is bound to that specific Device ID. Keep it; it can be re-entered later
 if needed.
@@ -249,11 +267,11 @@ if needed.
 | Flashing fails to connect | Hold BOOT, tap EN, release BOOT, retry; use 115200 baud |
 | AP `A12E_SCALE_MONITOR` not visible | Press EN/RST; check 5 V power; wait a few seconds |
 | Page shows `--` and no frames | RS232 wiring, GND, MAX232, 9600 baud |
-| Weight is 10× / 100× off | Check the **Raw frame** on the Monitor tab |
+| Weight is 10Ã— / 100Ã— off | Check the **Raw frame** on the Monitor tab |
 | Cloud not uploading | 2.4 GHz WiFi, signal, URL/token, **Send test row** |
-| Activate says “checking key” forever | You are not connected to the ESP32 AP. Reconnect to `A12E_SCALE_MONITOR`, reload `192.168.4.1`, and paste the **long key**, not the Device ID. |
+| Activate says â€œchecking keyâ€ forever | You are not connected to the ESP32 AP. Reconnect to `A12E_SCALE_MONITOR`, reload `192.168.4.1`, and paste the **long key**, not the Device ID. |
 | Config tab says 403 | You must be connected to the ESP32 AP, not the router LAN |
-| Trial reset unexpectedly | A full flash erase resets the trial to 3 h (normal reflash keeps it) |
+| Trial already claimed | Erasing flash does not reset the server claim; use another Device ID or contact support |
 | Forgot AP password | Set it again from Config while still connected; otherwise full erase resets to `33333333` |
 | Need support | Open **Debug**, press **Copy**, and send the log to WhatsApp |
 
@@ -261,7 +279,7 @@ if needed.
 
 ## 9. Safety
 
-- Never connect RS232 ±12 V directly to the ESP32. Use MAX232.
+- Never connect RS232 Â±12 V directly to the ESP32. Use MAX232.
 - Use a stable 5 V supply; avoid USB chargers that drop voltage.
 - Do not expose the board to water or high heat.
 - The AP and Config pages are local to the device. Use a strong AP password if

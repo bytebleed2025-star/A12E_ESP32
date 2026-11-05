@@ -5,7 +5,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 
-import { makeLicense, base64url, rawEcdsaToDer } from '../src/license.js';
+import { makeLicense, makeTrialToken, base64url, rawEcdsaToDer } from '../src/license.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '..', '..');
@@ -86,6 +86,31 @@ test('rejects invalid device IDs', async () => {
   await assert.rejects(
     () => makeLicense('A12E-XYZ', privatePem),
     /Invalid device ID/
+  );
+});
+
+test('generates a one-time trial token that verifies offline', async () => {
+  const { payload, token, seconds } = await makeTrialToken(
+    'A12E-A1B2C3D4E5F6',
+    10800,
+    privatePem,
+    1793766231987
+  );
+
+  assert.equal(payload, 'TRIAL1|A12E-A1B2C3D4E5F6|10800|1793766231987');
+  assert.equal(seconds, 10800);
+  assert.match(token, /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/);
+  assert.ok(verifyPayload(payload, token));
+});
+
+test('rejects invalid trial durations', async () => {
+  await assert.rejects(
+    () => makeTrialToken('A12E-A1B2C3D4E5F6', 30, privatePem),
+    /Invalid trial duration/
+  );
+  await assert.rejects(
+    () => makeTrialToken('A12E-A1B2C3D4E5F6', 8 * 24 * 3600, privatePem),
+    /Invalid trial duration/
   );
 });
 

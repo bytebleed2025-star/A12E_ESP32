@@ -20,13 +20,15 @@
  *   GET  /health
  */
 
-import { makeLicense } from './license.js';
-import { activatePage, orderPage, adminPage } from './pages.js';
+import { makeLicense, makeTrialToken } from './license.js';
+import { activatePage, orderPage, adminPage, trialPage } from './pages.js';
 
 const DEVICE_RE = /^A12E-[0-9A-F]{12}$/;
 const ORDER_RE = /^[a-f0-9]{32}$/;
 const MAX_BODY_BYTES = 16 * 1024;
 const MAX_ORDERS_PER_DEVICE_PER_HOUR = 3;
+const DEFAULT_TRIAL_SECONDS = 3 * 60 * 60;
+const MAX_TRIAL_SECONDS = 7 * 24 * 60 * 60;
 
 const SECURITY_HEADERS = {
   'X-Content-Type-Options': 'nosniff',
@@ -282,6 +284,75 @@ async function getOrderPublic(env, id) {
 }
 
 // ============================================================================
+// One-time trial claim
+// ============================================================================
+
+function trialSeconds(env) {
+  const configured = Number(env.TRIAL_SECONDS);
+  if (
+    Number.isInteger(configured) &&
+    configured >= 60 &&
+    configured <= MAX_TRIAL_SECONDS
+  ) {
+    return configured;
+  }
+  return DEFAULT_TRIAL_SECONDS;
+}
+
+async function claimTrial(request, env) {
+  const body = await readJson(request);
+  const deviceId = normalizeDeviceId(body.deviceId);
+  const contact = String(body.contact || '').trim();
+
+  if (!DEVICE_RE.test(deviceId)) {
+    throw new HttpError(400, 'Invalid Device ID (expected A12E-XXXXXXXXXXXX)');
+  }
+  if (contact.length > 120) {
+    throw new HttpError(400, 'Contact is too long (max 120 characters)');
+  }
+  if (!env.LICENSE_PRIVATE_KEY) {
+    throw new HttpError(503, 'Signing key is not configured (LICENSE_PRIVATE_KEY)');
+  }
+
+  const existing = await env.DB.prepare(
+    'SELECT device_id FROM trials WHERE device_id = ?'
+  )
+    .bind(deviceId)
+    .first();
+
+  if (existing) {
+    throw new HttpError(
+      409,
+      'The trial for this Device ID has already been claimed. Contact support.'
+    );
+  }
+
+  const seconds = trialSeconds(env);
+  const { token } = await makeTrialToken(
+    deviceId,
+    seconds,
+    env.LICENSE_PRIVATE_KEY
+  );
+  const now = Date.now();
+
+  try {
+    await env.DB.prepare(
+      'INSERT INTO trials (device_id, token, seconds, contact, created_at) ' +
+        'VALUES (?, ?, ?, ?, ?)'
+    )
+      .bind(deviceId, token, seconds, contact, now)
+      .run();
+  } catch (error) {
+    if (/UNIQUE/i.test(String(error && error.message))) {
+      throw new HttpError(409, 'The trial for this Device ID has already been claimed.');
+    }
+    throw error;
+  }
+
+  return json({ ok: true, deviceId, seconds, token }, 201);
+}
+
+// ============================================================================
 // Admin handlers
 // ============================================================================
 
@@ -371,6 +442,29 @@ async function manualSign(request, env) {
   return json({ ok: true, id, deviceId, key });
 }
 
+async function listTrials(env) {
+  const result = await env.DB.prepare(
+    'SELECT device_id, seconds, contact, created_at FROM trials ' +
+      'ORDER BY created_at DESC LIMIT 200'
+  ).all();
+
+  return json({ trials: result.results || [] });
+}
+
+async function resetTrial(request, env, deviceId) {
+  await readJson(request);
+
+  if (!DEVICE_RE.test(deviceId)) {
+    throw new HttpError(400, 'Invalid Device ID');
+  }
+
+  await env.DB.prepare('DELETE FROM trials WHERE device_id = ?')
+    .bind(deviceId)
+    .run();
+
+  return json({ ok: true, deviceId });
+}
+
 // ============================================================================
 // Router
 // ============================================================================
@@ -404,12 +498,20 @@ export default {
         return htmlPage(activatePage());
       }
 
+      if (method === 'GET' && path === '/trial') {
+        return htmlPage(trialPage());
+      }
+
       if (method === 'GET' && path === '/api/config') {
         return json(publicConfig(env));
       }
 
       if (method === 'POST' && path === '/api/orders') {
         return await createOrder(request, env, ctx);
+      }
+
+      if (method === 'POST' && path === '/api/trial') {
+        return await claimTrial(request, env);
       }
 
       const publicOrderMatch = path.match(/^\/order\/([a-f0-9]{32})$/);
@@ -444,6 +546,10 @@ export default {
         return await listOrders(env);
       }
 
+      if (method === 'GET' && path === '/api/admin/trials') {
+        return await listTrials(env);
+      }
+
       const paidMatch = path.match(/^\/api\/admin\/orders\/([a-f0-9]{32})\/paid$/);
       if (method === 'POST' && paidMatch) {
         return await markPaid(request, env, paidMatch[1]);
@@ -458,6 +564,13 @@ export default {
         return await manualSign(request, env);
       }
 
+      const resetTrialMatch = path.match(
+        /^\/api\/admin\/trials\/(A12E-[0-9A-F]{12})\/reset$/
+      );
+      if (method === 'POST' && resetTrialMatch) {
+        return await resetTrial(request, env, resetTrialMatch[1]);
+      }
+
       return text('Not found', 404);
     } catch (error) {
       if (error instanceof HttpError) {
@@ -470,4 +583,4 @@ export default {
 };
 
 // Exported for local tests.
-export { makeLicense, ORDER_RE };
+export { makeLicense, makeTrialToken, ORDER_RE };

@@ -5,7 +5,7 @@ job only:
 
 > **Read the weight from the scale/display over RS232 and show it on a web page.**
 
-It has **no relays, no thresholds, no mode switches** — just RS232 in, web page
+It has **no relays, no thresholds, no mode switches** â€” just RS232 in, web page
 out. The main `A12E_ESP32` firmware in the parent folder is completely separate
 and is **not** modified or used.
 
@@ -14,7 +14,7 @@ This version also includes a **sellable licensing system**:
 - **Free trial** (powered-on time; currently **3 hours for customer trials**, 24 h
   in production), then the page locks
 - **Signed activation keys** (ECDSA P-256), **bound to one board**
-- **Offline activation** — the customer does not need internet
+- **Offline activation** â€” the customer does not need internet
 - Keys are generated only with your **private key**, which is never in the `.bin`
 
 ---
@@ -27,13 +27,13 @@ This version also includes a **sellable licensing system**:
 - **Google Sheets logging** every configurable interval
 - **Config tab**: AP settings, router WiFi scan, Google Sheets URL/token
 - Read-only: no outputs are controlled
-- Embedded HTML — **no `uploadfs` step**, only firmware upload
-- **No external libraries** — Arduino ESP32 core only
+- Embedded HTML â€” **no `uploadfs` step**, only firmware upload
+- **No external libraries** â€” Arduino ESP32 core only
 - Shows diagnostics: raw frame, frames received, last-update age, uptime
 - **Local debug log page** at `/debug` (last 48 lines, RAM only)
 - Trial countdown, Device ID, activation box, "Licensed" state
 - Works with the same frame format as the main board:
-  `W 00004.3 kg` → `4.3 kg`
+  `W 00004.3 kg` â†’ `4.3 kg`
 
 ---
 
@@ -43,8 +43,8 @@ This version also includes a **sellable licensing system**:
 
 | Signal | ESP32 | MAX232 | Scale DB9 |
 |--------|-------|--------|-----------|
-| Scale TX → ESP32 RX | **GPIO21** | R1OUT (pin 1) ← RIN1 (pin 3/4) | pin 3 (TxD) |
-| ESP32 TX → Scale RX *(optional)* | **GPIO22** | R1IN (pin 2) → NOUT1 (pin 6/7) | pin 2 (RxD) |
+| Scale TX â†’ ESP32 RX | **GPIO21** | R1OUT (pin 1) â† RIN1 (pin 3/4) | pin 3 (TxD) |
+| ESP32 TX â†’ Scale RX *(optional)* | **GPIO22** | R1IN (pin 2) â†’ NOUT1 (pin 6/7) | pin 2 (RxD) |
 | Ground | GND | pin 10 | pin 5 (GND) |
 | Power | 5V/VIN + GND from 5 V / 2 A supply | | |
 
@@ -52,8 +52,8 @@ Only **GPIO21 (RX) and GND** are required to read the scale. GPIO22 is wired
 the same way as the main board for compatibility, but this firmware never
 transmits.
 
-> ⚠️ **Never connect RS232 voltage levels directly to the ESP32.** RS232 is
-> ±12 V and will damage the board. Use a MAX232 (or similar) level shifter.
+> âš ï¸ **Never connect RS232 voltage levels directly to the ESP32.** RS232 is
+> Â±12 V and will damage the board. Use a MAX232 (or similar) level shifter.
 
 ### Direct TTL scale output (no MAX232)
 
@@ -70,7 +70,7 @@ scale GND -> GND
 
 All settings are in two headers:
 
-### [`include/config.h`](include/config.h) — hardware / network
+### [`include/config.h`](include/config.h) â€” hardware / network
 
 | Setting | Default | Meaning |
 |---------|---------|---------|
@@ -86,12 +86,12 @@ All settings are in two headers:
 | `SHEET_HTTP_TIMEOUT_MS` | `10000` | HTTPS timeout |
 | `SHEET_TIMEZONE` | `WIB-7` | POSIX timezone for NTP timestamps |
 
-### [`include/license_config.h`](include/license_config.h) — licensing
+### [`include/license_config.h`](include/license_config.h) â€” licensing
 
 | Setting | Default | Meaning |
 |---------|---------|---------|
 | `LICENSE_TRIAL_SECONDS` | `10800` | Trial length = **3 h** of powered-on use (86400 = 24 h) |
-| `LICENSE_SAVE_INTERVAL_SEC` | `300` | Trial counter write interval (flash wear) |
+| `LICENSE_SAVE_INTERVAL_SEC` | `15` | Trial counter write interval (flash wear vs. power-loss accuracy) |
 | `LICENSE_PUBLIC_KEY_PEM` | (generated) | Public key used to verify activation keys |
 
 Runtime settings (AP SSID/password, router WiFi, Google Sheets URL/token,
@@ -193,7 +193,7 @@ Important behaviour:
 - ESP32 WiFi is **2.4 GHz only** (not 5 GHz).
 
 Passwords and the Sheets token are never returned by the API; the Config page
-shows “leave blank to keep current”.
+shows â€œleave blank to keep currentâ€.
 
 ---
 
@@ -212,9 +212,9 @@ Scale -> ESP32 -> (STA) -> Router -> Internet -> Google Apps Script -> Sheet
 See [`../google-sheets/README.md`](../google-sheets/README.md). Short version:
 
 1. Create a Google Sheet.
-2. Extensions → Apps Script → paste [`Code.gs`](../google-sheets/Code.gs).
+2. Extensions â†’ Apps Script â†’ paste [`Code.gs`](../google-sheets/Code.gs).
 3. Set a long random `TOKEN`.
-4. Deploy as **Web app** → execute as **Me** → access **Anyone**.
+4. Deploy as **Web app** â†’ execute as **Me** â†’ access **Anyone**.
 5. Copy the `/exec` URL.
 
 ### On the monitor
@@ -224,7 +224,7 @@ See [`../google-sheets/README.md`](../google-sheets/README.md). Short version:
    password.
 3. Paste the Apps Script `/exec` URL and the same token.
 4. Set the upload interval (seconds), then **Save & apply**.
-5. Press **Send test row** — a row should appear in the sheet.
+5. Press **Send test row** â€” a row should appear in the sheet.
 
 The board uploads one row per interval **only when**:
 
@@ -265,7 +265,7 @@ nothing changes for wired debugging.
 
 Details:
 
-- RAM only — a reboot clears the buffer
+- RAM only â€” a reboot clears the buffer
 - Pause / Clear view / Copy, auto-scroll, polls every 1.2 s
 - JSON API for other tools: `GET /api/log?since=N`
 - Local to the AP only; protected by the WiFi password
@@ -273,51 +273,46 @@ Details:
 
 ---
 
-## Quick test: 3-hour trial + activation
+## Quick test: one-time trial + activation
 
-The firmware is currently built with a **3-hour trial** for customer trials.
-
-> If you already flashed the board before, erase it first so the trial starts at
-> 3:00 (the trial counter is kept in NVS):
->
-> ```bash
-> pio run -d esp32_min_web -t erase
-> pio run -d esp32_min_web -t upload
-> ```
+The firmware requires a **one-time trial token** or a permanent activation key.
+The token is issued once per Device ID by the A12E license server. **Erasing
+the flash does not reset the claim.**
 
 1. Power the board, connect to WiFi `A12E_SCALE_MONITOR`, open
    `http://192.168.4.1`.
-2. Note the **Device ID** (e.g. `A12E-A1B2C3D4E5F6`) and watch the trial
-   countdown (`3h 0m` …).
-3. Generate a key on your PC (offline, fastest):
+2. Note the **Device ID** (e.g. `A12E-A1B2C3D4E5F6`).
+3. On mobile data open
+   <https://a12e-license.esp32dev-by-shd.workers.dev/trial>, enter the Device ID
+   and copy the long **trial token**.
+4. Reconnect to `A12E_SCALE_MONITOR`, paste the token into **Trial token** and
+   press **Claim trial**. The badge changes to **Trial** and the weight appears.
+5. For a permanent key, generate one on your PC (offline, fastest):
 
    ```bash
    node esp32_min_web/tools/make_license.js A12E-A1B2C3D4E5F6
    ```
 
    Copy the **third column** (the long key).
-4. On the monitor page, paste it into the **License** box and press
-   **ACTIVATE**. The badge changes from **Trial** to **Licensed**, and the
-   countdown is replaced by **Unlimited**.
-5. Reboot the ESP32 (unplug/replug). The page should still say **Licensed** —
+6. On the monitor page, paste it into **Activation key** and press **Activate**.
+   The badge changes from **Trial** to **Licensed**.
+7. Reboot the ESP32 (unplug/replug). The page should still say **Licensed** â€”
    the key is stored in NVS.
-6. Optional negative tests:
-   - Generate a key for a different Device ID → `Key is for a different device`
-   - Change one character of the key → `Invalid key (signature mismatch)`
+8. Optional negative tests:
+   - Generate a key for a different Device ID â†’ `Key is for a different device`
+   - Change one character of the key â†’ `Invalid key (signature mismatch)`
 
 To test the **online order flow**, use [`../license-server`](../license-server):
 create an order with the Device ID, approve it in `/admin`, and copy the key
 from the order page. The generated key is identical to the offline one.
 
-To reset the trial for another test, erase and re-upload:
+To run another trial, use a different Device ID or reset the claimed trial in
+the server admin (`DELETE` from the `trials` table). Do not erase the board
+expecting a fresh trial â€” the server still remembers the Device ID.
 
-```bash
-pio run -d esp32_min_web -t erase
-pio run -d esp32_min_web -t upload
-```
-
-For production, set the trial back to 24 hours in
-`include/license_config.h` and rebuild.
+The server controls the trial duration with `TRIAL_SECONDS` in
+`../license-server/wrangler.toml`; the firmware `LICENSE_TRIAL_SECONDS` is only
+the default display value.
 
 ---
 
@@ -362,7 +357,7 @@ For production, set the trial back to 24 hours in
 
 | File | Purpose | Ship it? |
 |------|---------|----------|
-| `tools/license_private.pem` | Signs keys — **your secret** | **NEVER** |
+| `tools/license_private.pem` | Signs keys â€” **your secret** | **NEVER** |
 | `tools/license_public.pem` | Verifies keys (already embedded in firmware) | no need |
 | `tools/make_license.js` | Generates customer keys | no |
 | `include/license_config.h` | Contains the embedded public key | source only |
@@ -376,14 +371,14 @@ Cloudflare Worker that automates the same key format:
 2. They pay (bank transfer / QRIS) and you confirm the order in `/admin`.
 3. The order page shows the key; the customer pastes it into the monitor.
 
-This is **Option A** — the ESP32 stays offline and **no firmware change is
+This is **Option A** â€” the ESP32 stays offline and **no firmware change is
 required**. Keys issued by the server are identical to `make_license.js` output
 and verify against the public key already in this firmware. See
 [`../license-server/README.md`](../license-server/README.md) for deployment.
 
-> The server automates paid key issuing. It does not stop a full flash erase
-> from resetting the local trial; that needs online trial registration or
-> secure-boot hardening.
+> The server also issues the one-time trial token, so a full flash erase no
+> longer creates a new trial. A saved token can still be replayed after an NVS
+> erase; eFuse marking or an online lease is the next hardening step.
 
 > **Back up `tools/license_private.pem` now.** It is excluded from git by
 > `.gitignore`. If you lose it you cannot issue keys for this firmware; you
@@ -391,35 +386,29 @@ and verify against the public key already in this firmware. See
 
 ### Changing the trial length
 
-Edit `LICENSE_TRIAL_SECONDS` in `include/license_config.h`, then rebuild:
+The claimed trial length comes from the **server** (`TRIAL_SECONDS` in
+`../license-server/wrangler.toml`) and is inside the signed token. Change it
+there and redeploy; existing tokens keep their original length.
+
+`LICENSE_TRIAL_SECONDS` in `include/license_config.h` is only the firmware
+fallback/display value used before a token is claimed:
 
 ```c
-// Current customer trial: 3 hours
+// Fallback display value
 #define LICENSE_TRIAL_SECONDS (3UL * 60UL * 60UL)
-
-// Production: 24 hours
-// #define LICENSE_TRIAL_SECONDS (24UL * 60UL * 60UL)
-
-// 7 days
-// #define LICENSE_TRIAL_SECONDS (7UL * 24UL * 60UL * 60UL)
 ```
 
 ### Before shipping a board
 
-If you power a board for testing, that time is deducted from the customer trial.
-For a clean trial, erase the flash and re-upload before packing:
+The customer claims the 3-hour trial once from the server. Do **not** erase the
+flash expecting a fresh trial: erasing NVS deletes the token, and the server
+refuses to issue another claim for the same Device ID.
 
-```bash
-pio run -d esp32_min_web -t erase
-pio run -d esp32_min_web -t upload
-```
-
-`erase` wipes the NVS trial counter; the next boot starts a fresh trial. (This
-also erases any activated key, so only do it on units that are not licensed
-yet.)
-
-If you sell **pre-activated** units instead, generate a key for each Device ID,
-activate it on the page, and ship it — the trial no longer matters.
+- Ship the unit **unclaimed** and let the customer claim it, or
+- generate a permanent key for the Device ID, activate it, and ship it
+  **pre-activated**.
+- To retest a trial, use another Device ID or delete the row from the server's
+  `trials` table.
 
 ### Generating a new keypair (rare)
 
@@ -442,7 +431,7 @@ on an ESP32 without extra production steps.
 
 What it protects well:
 
-- Customers cannot create keys from the `.bin` — the private key is not there.
+- Customers cannot create keys from the `.bin` â€” the private key is not there.
 - A key copied from another customer does not work (bound to Device ID).
 - Keys cannot be edited without invalidating the ECDSA signature.
 - Normal firmware updates do not reset the trial (NVS is preserved).
@@ -459,9 +448,10 @@ Web/Config security:
 
 Known limits:
 
-- **A full flash erase resets the trial.** The trial state must live on the
-  device; someone who runs `esptool erase_flash` or flashes with "erase" gets a
-  fresh trial. There is no battery-backed clock or server in AP-only mode.
+- **A full flash erase does not create a new trial.** The server issues the
+  token once per Device ID. Erasing NVS loses the token, but the server refuses
+  a second claim. A saved token can still be replayed after an NVS erase; an
+  eFuse marker or online lease is the next hardening step.
 - **The trial is powered-on time**, not wall-clock time. The ESP32 has no RTC
   battery, so "3 h" (customer build) or "24 h" (production) means actual use. A
   customer who uses it two hours a day gets several calendar days.
@@ -470,7 +460,7 @@ Known limits:
 If you need stronger protection:
 
 1. **Enable ESP32 Secure Boot + Flash Encryption** before selling. This makes
-   patched firmware refuse to run. It is a one-way eFuse operation — test on
+   patched firmware refuse to run. It is a one-way eFuse operation â€” test on
    spare boards first.
 2. **Online activation** (device connects to your server once) allows strict
    calendar expiry and server-side revocation. This firmware is offline by
@@ -489,6 +479,7 @@ If you need stronger protection:
 | `GET /api/status` | JSON status |
 | `GET /api/log?since=N` | Recent log lines as JSON |
 | `GET /api/activate?key=...` | Activate a key (also accepts `POST key=...`) |
+| `POST /api/trial-claim` | `token=...` claim the one-time trial |
 | `GET /api/settings` | Current settings + STA status (secrets omitted) |
 | `POST /api/settings` | Save AP / STA / Sheets settings |
 | `POST /api/wifi/scan` | Scan nearby WiFi networks |
@@ -526,11 +517,11 @@ Example `/api/status`:
 }
 ```
 
-- `license` — `trial`, `licensed`, or `expired`
-- `locked` — `true` after the trial ends with no key; weight is withheld
-- `trialRemaining` / `trialTotal` — seconds
-- `staStatus` — `connected`, `connecting`, `offline`, or `not configured`
-- `lastUploadAge` — ms since the last Sheets attempt, or `-1` if never
+- `license` â€” `trial`, `licensed`, or `expired`
+- `locked` â€” `true` after the trial ends with no key; weight is withheld
+- `trialRemaining` / `trialTotal` â€” seconds
+- `staStatus` â€” `connected`, `connecting`, `offline`, or `not configured`
+- `lastUploadAge` â€” ms since the last Sheets attempt, or `-1` if never
 
 Activation response:
 
@@ -567,15 +558,15 @@ so line noise cannot corrupt the displayed weight.
 
 | Symptom | Check |
 |---------|-------|
-| Page shows `--` and `No data` on serial | RX wiring, TX→GPIO21, common GND |
+| Page shows `--` and `No data` on serial | RX wiring, TXâ†’GPIO21, common GND |
 | Garbage/random frames | Baud rate (`SCALE_BAUD_RATE`), MAX232 wiring, cable |
 | Nothing on the AP list | Board powered? Antenna/board OK? Re-upload |
-| Weight is 10× / 100× off | Scale's decimal format differs; check the `raw` frame on the page |
+| Weight is 10Ã— / 100Ã— off | Scale's decimal format differs; check the `raw` frame on the page |
 | Web page won't open | Connect to the AP first; use `http://192.168.4.1` (not HTTPS) |
 | "Key is for a different device" | Generate the key with the exact Device ID shown on that board |
 | "Invalid key (signature mismatch)" | Key was mistyped/truncated, or made with a different keypair |
-| Activation works but returns after reboot | NVS write failed (flash problem) — check serial logs |
-| Trial reset unexpectedly | The board was fully flash-erased (expected limitation) |
+| Activation works but returns after reboot | NVS write failed (flash problem) â€” check serial logs |
+| Trial already claimed | Erasing flash does not reset the server claim; use another Device ID or contact support |
 
 ---
 
@@ -583,35 +574,35 @@ so line noise cannot corrupt the displayed weight.
 
 ```
 esp32_min_web/
-├── platformio.ini            # standalone build config (no lib_deps)
-├── include/
-│   ├── config.h              # AP defaults, pins, timing, cloud interval
-│   ├── license_config.h      # trial length + embedded public key
-│   └── sta_secrets.example.h # optional factory defaults
-├── src/
-│   ├── main.cpp              # RS232 parser + HTTP routes
-│   ├── settings.h / .cpp     # NVS settings: AP, STA, Sheets
-│   ├── net.h / .cpp          # AP+STA WiFi, scan, NTP
-│   ├── sheets.h / .cpp       # Google Sheets uploader
-│   ├── license.h / .cpp      # trial, NVS, ECDSA verification
-│   ├── log.h / .cpp          # RAM log ring buffer + Serial tee
-│   ├── web_ui.h              # shared modern CSS + page shell
-│   ├── monitor_page.h        # Monitor tab
-│   ├── debug_page.h          # Debug tab
-│   └── config_page.h         # Config tab
-├── tools/
-│   ├── make_license.js       # generate customer activation keys
-│   ├── generate_keypair.js   # create a new keypair (rare)
-│   ├── license_private.pem   # SECRET - gitignored, never ship
-│   └── license_public.pem    # public half (also embedded in firmware)
-├── .gitignore                # keeps secrets and build files out of git
-└── README.md
+â”œâ”€â”€ platformio.ini            # standalone build config (no lib_deps)
+â”œâ”€â”€ include/
+â”‚   â”œâ”€â”€ config.h              # AP defaults, pins, timing, cloud interval
+â”‚   â”œâ”€â”€ license_config.h      # trial length + embedded public key
+â”‚   â””â”€â”€ sta_secrets.example.h # optional factory defaults
+â”œâ”€â”€ src/
+â”‚   â”œâ”€â”€ main.cpp              # RS232 parser + HTTP routes
+â”‚   â”œâ”€â”€ settings.h / .cpp     # NVS settings: AP, STA, Sheets
+â”‚   â”œâ”€â”€ net.h / .cpp          # AP+STA WiFi, scan, NTP
+â”‚   â”œâ”€â”€ sheets.h / .cpp       # Google Sheets uploader
+â”‚   â”œâ”€â”€ license.h / .cpp      # trial, NVS, ECDSA verification
+â”‚   â”œâ”€â”€ log.h / .cpp          # RAM log ring buffer + Serial tee
+â”‚   â”œâ”€â”€ web_ui.h              # shared modern CSS + page shell
+â”‚   â”œâ”€â”€ monitor_page.h        # Monitor tab
+â”‚   â”œâ”€â”€ debug_page.h          # Debug tab
+â”‚   â””â”€â”€ config_page.h         # Config tab
+â”œâ”€â”€ tools/
+â”‚   â”œâ”€â”€ make_license.js       # generate customer activation keys
+â”‚   â”œâ”€â”€ generate_keypair.js   # create a new keypair (rare)
+â”‚   â”œâ”€â”€ license_private.pem   # SECRET - gitignored, never ship
+â”‚   â””â”€â”€ license_public.pem    # public half (also embedded in firmware)
+â”œâ”€â”€ .gitignore                # keeps secrets and build files out of git
+â””â”€â”€ README.md
 ```
 
 Related folders in the repository:
 
-- `../license-server` — Cloudflare Worker + D1 activation site
-- `../google-sheets` — Apps Script logger
+- `../license-server` â€” Cloudflare Worker + D1 activation site
+- `../google-sheets` â€” Apps Script logger
 
 No `data/` folder and no `uploadfs`: the web UI is compiled into the
 firmware. Settings live in NVS and are edited from the Config tab.

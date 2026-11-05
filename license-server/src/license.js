@@ -10,7 +10,9 @@
  */
 
 const PRODUCT_CODE = 'A12E1';
+const TRIAL_CODE = 'TRIAL1';
 const ECDSA_RAW_LENGTH = 64;
+const MAX_TRIAL_SECONDS = 7 * 24 * 60 * 60;
 
 const encoder = new TextEncoder();
 
@@ -116,6 +118,52 @@ export async function makeLicense(deviceId, privateKeyPem, serial = Date.now()) 
   }
 
   const payload = [PRODUCT_CODE, deviceId, 'P', String(serial)].join('|');
+  const key = await signPayload(payload, privateKeyPem);
+
+  return { payload, key };
+}
+
+/**
+ * Create a one-time trial token.
+ *
+ * Payload format, verified offline by the firmware:
+ *   TRIAL1|<device-id>|<seconds>|<serial>
+ *
+ * The server must issue this only once per Device ID. The token is a bearer
+ * credential: if the customer saves it, it can be replayed after an NVS erase.
+ * Pair it with an eFuse claim marker or an online lease for real enforcement.
+ *
+ * @param {string} deviceId e.g. A12E-A1B2C3D4E5F6
+ * @param {number} seconds trial duration
+ * @param {string} privateKeyPem PKCS8 PEM
+ * @param {number|string} [serial]
+ * @returns {Promise<{payload: string, token: string, seconds: number}>}
+ */
+export async function makeTrialToken(
+  deviceId,
+  seconds,
+  privateKeyPem,
+  serial = Date.now()
+) {
+  if (!/^A12E-[0-9A-F]{12}$/.test(deviceId)) {
+    throw new Error('Invalid device ID');
+  }
+
+  const duration = Number(seconds);
+  if (!Number.isInteger(duration) || duration < 60 || duration > MAX_TRIAL_SECONDS) {
+    throw new Error('Invalid trial duration');
+  }
+  if (String(serial).includes('|')) {
+    throw new Error('Invalid serial');
+  }
+
+  const payload = [TRIAL_CODE, deviceId, String(duration), String(serial)].join('|');
+  const token = await signPayload(payload, privateKeyPem);
+
+  return { payload, token, seconds: duration };
+}
+
+async function signPayload(payload, privateKeyPem) {
   const key = await getPrivateKey(privateKeyPem);
 
   const rawSignature = new Uint8Array(
@@ -127,9 +175,5 @@ export async function makeLicense(deviceId, privateKeyPem, serial = Date.now()) 
   );
 
   const derSignature = rawEcdsaToDer(rawSignature);
-
-  return {
-    payload,
-    key: base64url(encoder.encode(payload)) + '.' + base64url(derSignature),
-  };
+  return base64url(encoder.encode(payload)) + '.' + base64url(derSignature);
 }

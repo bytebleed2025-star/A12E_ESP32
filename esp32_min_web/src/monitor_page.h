@@ -57,6 +57,22 @@ static const char MONITOR_BODY[] = R"HTML(
             <button class="btn secondary small" type="button" onclick="copyDeviceId(this)">Copy Device ID</button>
           </div>
 
+          <div id="trialArea" style="margin-top:16px">
+            <label class="field"><span>Trial token</span>
+              <textarea id="trialInput" rows="2" placeholder="Paste the long trial token"
+                        spellcheck="false" autocomplete="off"></textarea>
+            </label>
+            <p class="note" style="margin:6px 0 10px">
+              One claim per Device ID. Open the
+              <a id="trialUrl" href="https://a12e-license.esp32dev-by-shd.workers.dev/trial"
+                 target="_blank" rel="noopener">trial page</a>
+              with mobile data, then reconnect to
+              <strong>A12E_SCALE_MONITOR</strong>.
+            </p>
+            <button class="btn" id="trialBtn" type="button" onclick="claimTrial()">Claim trial</button>
+            <div class="msg" id="trialMsg"></div>
+          </div>
+
           <div id="activateArea" style="margin-top:16px">
             <label class="field"><span>Activation key</span>
               <textarea id="keyInput" rows="2" placeholder="Paste the long activation key"
@@ -151,22 +167,41 @@ static const char MONITOR_SCRIPT[] = R"JS(
 
       var pill = $('licensePill');
       var locked = !!d.locked;
+      var claimed = !!d.trialClaimed || d.license === 'trial' || d.license === 'expired';
+      var trialArea = $('trialArea');
+
       $('lockNote').className = 'notice' + (locked ? ' show' : '');
+      $('lockNote').textContent = (d.license === 'unclaimed')
+        ? 'Trial not claimed. Claim the one-time trial below, or enter an activation key.'
+        : 'Trial expired. Enter an activation key below to continue using this device.';
+
+      if (d.trialUrl) $('trialUrl').href = d.trialUrl;
+      if (d.activationUrl) $('buyUrl').value = d.activationUrl;
 
       if (d.license === 'licensed') {
         pill.textContent = 'Licensed';
         pill.className = 'chip ok';
         $('trialLeft').textContent = 'Unlimited';
+        $('trialArea').style.display = 'none';
         $('activateArea').style.display = 'none';
         $('licensedMsg').className = 'ok-box show';
       } else {
         $('licensedMsg').className = 'ok-box';
         $('activateArea').style.display = 'block';
-        $('trialLeft').textContent = (d.license === 'expired')
-          ? 'expired'
-          : fmtTrial(d.trialRemaining);
-        pill.textContent = (d.license === 'expired') ? 'Expired' : 'Trial';
-        pill.className = 'chip ' + ((d.license === 'expired') ? 'bad' : 'warn');
+        $('trialArea').style.display = claimed ? 'none' : 'block';
+        if (d.license === 'unclaimed') {
+          $('trialLeft').textContent = 'not claimed';
+          pill.textContent = 'Unclaimed';
+          pill.className = 'chip bad';
+        } else if (d.license === 'expired') {
+          $('trialLeft').textContent = 'expired';
+          pill.textContent = 'Expired';
+          pill.className = 'chip bad';
+        } else {
+          $('trialLeft').textContent = fmtTrial(d.trialRemaining);
+          pill.textContent = 'Trial';
+          pill.className = 'chip warn';
+        }
       }
     }
 
@@ -242,6 +277,65 @@ static const char MONITOR_SCRIPT[] = R"JS(
           $('cloudChip').textContent = 'Offline';
           $('cloudChip').className = 'chip bad';
           setBadge(false, false, false);
+        });
+    }
+
+    function showTrialMsg(text, ok) {
+      var el = $('trialMsg');
+      el.textContent = text;
+      el.className = 'msg' + (ok === true ? ' ok' : (ok === false ? ' err' : ''));
+    }
+
+    function claimTrial() {
+      var input = $('trialInput');
+      var btn = $('trialBtn');
+      var token = input.value.trim();
+
+      if (!token) {
+        showTrialMsg('Paste the trial token first.', false);
+        return;
+      }
+      if (token.indexOf('.') < 0 || token.length < 40) {
+        showTrialMsg('That looks like the Device ID, not a trial token.', false);
+        return;
+      }
+
+      btn.disabled = true;
+      input.disabled = true;
+      showTrialMsg('Checking trial token...', null);
+
+      var controller = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+      var timeoutId = controller ? setTimeout(function () { controller.abort(); }, 10000) : null;
+      var options = {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'token=' + encodeURIComponent(token)
+      };
+      if (controller) options.signal = controller.signal;
+
+      fetch('/api/trial-claim', options)
+        .then(function (r) {
+          return r.json().then(function (d) { return { ok: r.ok, data: d }; });
+        })
+        .then(function (res) {
+          if (res.ok && res.data.ok) {
+            input.value = '';
+            showTrialMsg('Trial active. Thank you!', true);
+            poll();
+          } else {
+            showTrialMsg(res.data.error || 'Invalid trial token for this device.', false);
+          }
+        })
+        .catch(function (err) {
+          var msg = (err && err.name === 'AbortError')
+            ? 'Connection timeout. Reconnect to A12E_SCALE_MONITOR and try again.'
+            : 'Connection error. Reconnect to A12E_SCALE_MONITOR and try again.';
+          showTrialMsg(msg, false);
+        })
+        .finally(function () {
+          if (timeoutId) clearTimeout(timeoutId);
+          btn.disabled = false;
+          input.disabled = false;
         });
     }
 

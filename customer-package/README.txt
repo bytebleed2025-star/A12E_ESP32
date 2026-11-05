@@ -1,4 +1,4 @@
-A12E Scale Monitor — customer package
+A12E Scale Monitor â€” customer package
 =====================================
 
 Send these files to the customer:
@@ -6,8 +6,9 @@ Send these files to the customer:
 1. A12E_SCALE_MONITOR_3H_TRIAL_CLOUD_FACTORY.bin
    - Complete ESP32 factory image
    - Flash at offset 0x0
-   - Erase flash first (fresh 3-hour trial)
-   - SHA256: EE3058A4AD1097E0EAB34E85E3C3CD2477707BD15C6C33865F371801077B73DD
+   - Erasing does NOT reset the trial: claim it once at
+     https://a12e-license.esp32dev-by-shd.workers.dev/trial
+   - SHA256: 44969CF54DDFB6195A1239E2B1404000CBA6CF24919A8F4CCCDFBB1901BC50BF
 
 2. SETUP_GUIDE.html
    - Open in a browser and use "Print / Save as PDF" if you want to send a PDF.

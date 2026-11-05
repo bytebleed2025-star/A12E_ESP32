@@ -241,9 +241,9 @@ export function activatePage() {
     <div class="brand">&#9878;&#65039; <span id="siteName">A12E Scale Monitor</span></div>
     <h1>Activate your device</h1>
     <p class="sub">
-      Your monitor includes a free trial. To keep using it, order a permanent
-      activation key for this device. The key is tied to the Device ID shown on
-      the monitor and works offline.
+      Your monitor includes a free trial. <a href="/trial">Claim the one-time trial</a>
+      first, or order a permanent activation key for this device. The key is tied
+      to the Device ID shown on the monitor and works offline.
     </p>
 
     <form id="orderForm">
@@ -363,6 +363,149 @@ export function activatePage() {
   `;
 
   return shell('A12E Activation', body, script);
+}
+
+export function trialPage() {
+  const body = `
+    <div class="brand">&#9878;&#65039; <span id="siteName">A12E Scale Monitor</span></div>
+    <h1>Claim your free trial</h1>
+    <p class="sub">
+      Each Device ID can claim the trial <strong>once</strong>. The signed token
+      is tied to this monitor and works offline. Keep it private.
+    </p>
+
+    <form id="trialForm">
+      <label for="deviceId">Device ID</label>
+      <input type="text" id="deviceId" maxlength="17" placeholder="A12E-A1B2C3D4E5F6"
+             autocomplete="off" spellcheck="false" required>
+      <p class="hint">Shown on the monitor page under &ldquo;Device ID&rdquo;.</p>
+
+      <label for="contact">WhatsApp / Email <span class="opt">(optional)</span></label>
+      <input type="text" id="contact" maxlength="120" placeholder="08xx-xxxx-xxxx or name@email.com"
+             autocomplete="off">
+
+      <button type="submit" id="submitBtn" class="full">Claim one-time trial</button>
+    </form>
+
+    <div class="notice" id="msg"></div>
+
+    <div class="box success" id="result" style="display:none">
+      <h2>Your trial token</h2>
+      <p class="hint">
+        Paste this into the monitor's <strong>Trial token</strong> box and press
+        <strong>Claim trial</strong>. Save it somewhere safe.
+      </p>
+      <textarea id="token" rows="4" readonly></textarea>
+      <button type="button" class="full" id="copyBtn">Copy token</button>
+    </div>
+
+    <div class="steps">
+      <h2>How it works</h2>
+      <ol>
+        <li>Enter the Device ID shown on the monitor.</li>
+        <li>Copy the signed trial token from this page.</li>
+        <li>Open the monitor page, paste it into Trial token, and press Claim trial.</li>
+        <li>Your trial counts powered-on time; the monitor shows the remaining duration.</li>
+      </ol>
+      <p class="hint">Need a permanent license? <a href="/activate">Activate here</a>.</p>
+    </div>
+  `;
+
+  const script = `
+    var DEVICE_RE = /^A12E-[0-9A-F]{12}$/;
+    var msg = document.getElementById('msg');
+    var form = document.getElementById('trialForm');
+    var deviceInput = document.getElementById('deviceId');
+    var submitBtn = document.getElementById('submitBtn');
+    var result = document.getElementById('result');
+    var tokenBox = document.getElementById('token');
+    var copyBtn = document.getElementById('copyBtn');
+
+    function showMsg(text, kind) {
+      msg.textContent = text;
+      msg.className = 'notice show ' + (kind || 'info');
+    }
+
+    function cleanDevice() {
+      deviceInput.value = deviceInput.value.toUpperCase().replace(/[^A-Z0-9-]/g, '');
+    }
+
+    deviceInput.addEventListener('input', cleanDevice);
+
+    var params = new URLSearchParams(location.search);
+    if (params.get('device')) {
+      deviceInput.value = params.get('device').toUpperCase();
+      cleanDevice();
+    }
+
+    fetch('/api/config', { cache: 'no-store' })
+      .then(function (r) { return r.json(); })
+      .then(function (c) {
+        document.getElementById('siteName').textContent = c.siteName;
+        document.title = c.siteName + ' - Trial';
+      })
+      .catch(function () { /* defaults are fine */ });
+
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+      cleanDevice();
+
+      if (!DEVICE_RE.test(deviceInput.value)) {
+        showMsg('Device ID must look like A12E-A1B2C3D4E5F6 (from the monitor page).', 'err');
+        deviceInput.focus();
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Issuing token...';
+      showMsg('Issuing your one-time trial token...', 'info');
+
+      fetch('/api/trial', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          deviceId: deviceInput.value,
+          contact: document.getElementById('contact').value.trim()
+        })
+      })
+        .then(function (r) {
+          return r.json().then(function (d) { return { ok: r.ok, data: d }; });
+        })
+        .then(function (res) {
+          if (!res.ok) throw new Error(res.data.error || 'Could not issue the trial');
+          tokenBox.value = res.data.token;
+          result.style.display = 'block';
+          showMsg('Trial token issued. Copy it and paste it into the monitor.', 'ok');
+          result.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        })
+        .catch(function (err) {
+          showMsg(err.message || 'Connection error. Try again.', 'err');
+        })
+        .finally(function () {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Claim one-time trial';
+        });
+    });
+
+    copyBtn.addEventListener('click', function () {
+      var text = tokenBox.value;
+      function done() {
+        showMsg('Token copied. Paste it into the Trial token box on the monitor.', 'ok');
+      }
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(done).catch(fallback);
+      } else {
+        fallback();
+      }
+      function fallback() {
+        tokenBox.select();
+        try { document.execCommand('copy'); done(); }
+        catch (e) { showMsg('Copy failed. Select the token manually.', 'err'); }
+      }
+    });
+  `;
+
+  return shell('A12E Trial', body, script);
 }
 
 // ============================================================================
