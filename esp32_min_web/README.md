@@ -9,10 +9,15 @@ It has **no relays, no thresholds, no mode switches** â€” just RS232 in, we
 out. The main `A12E_ESP32` firmware in the parent folder is completely separate
 and is **not** modified or used.
 
+> **Current firmware:** a silent **6-hour local trial** stored in NVS. There is
+> no trial token, no “Claim trial” button, and no `/trial` server page. When the
+> 6 hours end, the page locks and shows **TRIAL ENDED** until a key is entered.
+> Older sections below that describe server trial tokens are legacy.
+
 This version also includes a **sellable licensing system**:
 
-- **Free trial** (powered-on time; currently **3 hours for customer trials**, 24 h
-  in production), then the page locks
+- **Silent trial** (6 hours of powered-on time, starts automatically), then the
+  page locks and shows **TRIAL ENDED**
 - **Signed activation keys** (ECDSA P-256), **bound to one board**
 - **Offline activation** â€” the customer does not need internet
 - Keys are generated only with your **private key**, which is never in the `.bin`
@@ -90,7 +95,7 @@ All settings are in two headers:
 
 | Setting | Default | Meaning |
 |---------|---------|---------|
-| `LICENSE_TRIAL_SECONDS` | `10800` | Trial length = **3 h** of powered-on use (86400 = 24 h) |
+| `LICENSE_TRIAL_SECONDS` | `21600` | Trial length = **6 h** of powered-on use (86400 = 24 h) |
 | `LICENSE_SAVE_INTERVAL_SEC` | `15` | Trial counter write interval (flash wear vs. power-loss accuracy) |
 | `LICENSE_PUBLIC_KEY_PEM` | (generated) | Public key used to verify activation keys |
 
@@ -273,46 +278,35 @@ Details:
 
 ---
 
-## Quick test: one-time trial + activation
+## Quick test: 6-hour trial + activation
 
-The firmware requires a **one-time trial token** or a permanent activation key.
-The token is issued once per Device ID by the A12E license server. **Erasing
-the flash does not reset the claim.**
+The firmware starts a **silent 6-hour trial automatically** on first boot. There
+is no trial token to claim and no trial countdown in the UI. After 6 hours of
+powered-on time the page locks and shows **TRIAL ENDED** until a permanent key
+is entered.
 
 1. Power the board, connect to WiFi `A12E_SCALE_MONITOR`, open
    `http://192.168.4.1`.
 2. Note the **Device ID** (e.g. `A12E-A1B2C3D4E5F6`).
-3. On mobile data open
-   <https://a12e-license.esp32dev-by-shd.workers.dev/trial>, enter the Device ID
-   and copy the long **trial token**.
-4. Reconnect to `A12E_SCALE_MONITOR`, paste the token into **Trial token** and
-   press **Claim trial**. The badge changes to **Trial** and the weight appears.
-5. For a permanent key, generate one on your PC (offline, fastest):
+3. Use the monitor normally for the trial period.
+4. For a permanent key, generate one offline:
 
    ```bash
    node esp32_min_web/tools/make_license.js A12E-A1B2C3D4E5F6
    ```
 
-   Copy the **third column** (the long key).
-6. On the monitor page, paste it into **Activation key** and press **Activate**.
-   The badge changes from **Trial** to **Licensed**.
-7. Reboot the ESP32 (unplug/replug). The page should still say **Licensed** â€”
-   the key is stored in NVS.
-8. Optional negative tests:
-   - Generate a key for a different Device ID â†’ `Key is for a different device`
-   - Change one character of the key â†’ `Invalid key (signature mismatch)`
+   Copy the **third column** (the long key). Or use the online order page at
+   <https://embedded-devlicense.esp32dev-by-shd.workers.dev/a12escales>.
+5. On the monitor page, paste the key into **Activation key** and press
+   **Activate**. The badge changes to **Licensed**.
+6. Reboot the ESP32. The page should still say **Licensed** — the key is stored
+   in NVS.
+7. Optional negative tests:
+   - Generate a key for a different Device ID → `Key is for a different device`
+   - Change one character of the key → `Invalid key (signature mismatch)`
 
-To test the **online order flow**, use [`../license-server`](../license-server):
-create an order with the Device ID, approve it in `/admin`, and copy the key
-from the order page. The generated key is identical to the offline one.
-
-To run another trial, use a different Device ID or reset the claimed trial in
-the server admin (`DELETE` from the `trials` table). Do not erase the board
-expecting a fresh trial â€” the server still remembers the Device ID.
-
-The server controls the trial duration with `TRIAL_SECONDS` in
-`../license-server/wrangler.toml`; the firmware `LICENSE_TRIAL_SECONDS` is only
-the default display value.
+The trial is local (NVS). A full flash erase resets it. The server no longer
+issues trial tokens; only paid, device-bound activation keys.
 
 ---
 
@@ -479,7 +473,6 @@ If you need stronger protection:
 | `GET /api/status` | JSON status |
 | `GET /api/log?since=N` | Recent log lines as JSON |
 | `GET /api/activate?key=...` | Activate a key (also accepts `POST key=...`) |
-| `POST /api/trial-claim` | `token=...` claim the one-time trial |
 | `GET /api/settings` | Current settings + STA status (secrets omitted) |
 | `POST /api/settings` | Save AP / STA / Sheets settings |
 | `POST /api/wifi/scan` | Scan nearby WiFi networks |

@@ -31,7 +31,7 @@
 #define LICENSE_SAVE_INTERVAL_SEC 15UL
 
 #define LICENSE_ACTIVATION_URL \
-  "https://a12e-license.esp32dev-by-shd.workers.dev/a12escales"
+  "https://embedded-devlicense.esp32dev-by-shd.workers.dev/a12escales"
 
 // Public key used to verify activation keys (ECDSA P-256, SHA-256).
 // This is the PUBLIC half only - safe to ship inside the .bin.
