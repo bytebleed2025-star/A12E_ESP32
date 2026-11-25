@@ -18,7 +18,6 @@ enum class LicenseState : uint8_t {
 void licenseBegin();
 void licenseLoop();
 bool licenseActivate(const String &key, String &error);
-bool licenseClaimTrial(const String &token, String &error);
 
 LicenseState licenseGetState();
 bool licenseIsLocked();
@@ -26,7 +25,6 @@ uint32_t licenseTrialRemainingSec();
 uint32_t licenseTrialTotalSec();
 const String &licenseDeviceId();
 bool licenseHasStoredKey();
-bool licenseHasTrialToken();
 const char *licenseStateName();
 
 #endif // LICENSE_H

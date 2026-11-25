@@ -211,14 +211,6 @@ static void handleStatus() {
   appendJsonEscaped(json, licenseDeviceId().c_str());
   json += F("\",\"license\":\"");
   json += licenseStateName();
-  json += F("\",\"trialRemaining\":");
-  json += String(licenseTrialRemainingSec());
-  json += F(",\"trialTotal\":");
-  json += String(licenseTrialTotalSec());
-  json += F(",\"trialClaimed\":");
-  json += licenseHasTrialToken() ? F("true") : F("false");
-  json += F(",\"trialUrl\":\"");
-  json += LICENSE_TRIAL_URL;
   json += F("\",\"activationUrl\":\"");
   json += LICENSE_ACTIVATION_URL;
   json += F("\",\"locked\":");

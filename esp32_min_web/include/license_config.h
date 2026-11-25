@@ -22,8 +22,6 @@
 // No trial UI is shown while the timer runs. When it expires the monitor shows
 // "TRIAL ENDED" and requires an activation key.
 #define LICENSE_TRIAL_SECONDS (6UL * 60UL * 60UL)
-#define LICENSE_TRIAL_CODE "TRIAL1"
-#define LICENSE_MAX_TRIAL_SECONDS (7UL * 24UL * 60UL * 60UL)
 
 // NVS namespace for trial counter + activated key
 #define LICENSE_NVS_NAMESPACE "a12e_lic"
@@ -34,8 +32,6 @@
 
 #define LICENSE_ACTIVATION_URL \
   "https://a12e-license.esp32dev-by-shd.workers.dev/a12escales"
-#define LICENSE_TRIAL_URL \
-  "https://a12e-license.esp32dev-by-shd.workers.dev/a12escales/trial"
 
 // Public key used to verify activation keys (ECDSA P-256, SHA-256).
 // This is the PUBLIC half only - safe to ship inside the .bin.

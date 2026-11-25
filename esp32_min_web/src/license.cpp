@@ -42,7 +42,6 @@ static Preferences prefs;
 static LicenseState state = LicenseState::Unclaimed;
 static String deviceId;
 static String storedKey;
-static String storedTrialToken;
 
 static uint32_t trialUsedSec = 0;
 static uint32_t trialTotalSec = LICENSE_TRIAL_SECONDS;
@@ -207,55 +206,6 @@ static bool verifyKey(const String &rawKey, String *reason = nullptr) {
   return true;
 }
 
-static bool verifyTrialToken(const String &rawToken, uint32_t &seconds,
-                             String *reason = nullptr) {
-  const auto fail = [&](const char *message) {
-    if (reason != nullptr) *reason = message;
-    return false;
-  };
-
-  String text;
-  if (!decodeAndVerify(rawToken, text, reason)) return false;
-
-  const int p1 = text.indexOf('|');
-  const int p2 = text.indexOf('|', p1 + 1);
-  const int p3 = text.indexOf('|', p2 + 1);
-  if (p1 <= 0 || p2 <= p1 || p3 <= p2 || text.indexOf('|', p3 + 1) >= 0) {
-    return fail("Trial payload is not valid");
-  }
-
-  const String version = text.substring(0, p1);
-  const String tokenDevice = text.substring(p1 + 1, p2);
-  const String secondsText = text.substring(p2 + 1, p3);
-  const String serial = text.substring(p3 + 1);
-
-  if (version != LICENSE_TRIAL_CODE) {
-    return fail("Token is for a different product");
-  }
-  if (tokenDevice != deviceId) {
-    return fail("Token is for a different device");
-  }
-  if (serial.length() == 0) {
-    return fail("Trial serial is missing");
-  }
-  if (secondsText.length() == 0 || secondsText.length() > 9) {
-    return fail("Trial duration is not valid");
-  }
-  for (size_t i = 0; i < secondsText.length(); ++i) {
-    if (!isdigit(static_cast<unsigned char>(secondsText[i]))) {
-      return fail("Trial duration is not valid");
-    }
-  }
-
-  const unsigned long parsed = strtoul(secondsText.c_str(), nullptr, 10);
-  if (parsed < 60 || parsed > LICENSE_MAX_TRIAL_SECONDS) {
-    return fail("Trial duration is not valid");
-  }
-
-  seconds = static_cast<uint32_t>(parsed);
-  return true;
-}
-
 static uint32_t remainingTrialSec() {
   if (trialUsedSec >= trialTotalSec) return 0;
   return trialTotalSec - trialUsedSec;
@@ -299,7 +249,6 @@ void licenseBegin() {
 
   trialUsedSec = prefs.getUInt("used", 0);
   storedKey = prefs.getString("key", "");
-  storedTrialToken = prefs.getString("trial", "");
   trialTotalSec = LICENSE_TRIAL_SECONDS;
   state = LicenseState::Trial;
 
@@ -378,52 +327,6 @@ bool licenseActivate(const String &key, String &error) {
   return true;
 }
 
-bool licenseClaimTrial(const String &token, String &error) {
-  // Tokens are no longer used: every device gets an automatic silent 6 h trial.
-  (void)token;
-  error = "Trial tokens are no longer used";
-  return false;
-}
-
-#if 0
-bool licenseClaimTrialLegacy(const String &token, String &error) {
-  if (state == LicenseState::Licensed) {
-    error = "Device is already licensed";
-    return false;
-  }
-  if (storedTrialToken.length() > 0) {
-    error = "Trial already claimed on this device";
-    return false;
-  }
-
-  uint32_t seconds = 0;
-  if (!verifyTrialToken(token, seconds, &error)) {
-    webLog("[LIC] Trial claim rejected: %s", error.c_str());
-    return false;
-  }
-
-  String cleaned = token;
-  cleaned.trim();
-
-  if (prefs.putString("trial", cleaned) == 0) {
-    error = "Could not save trial token (NVS write failed)";
-    webLog("[LIC] Trial claim failed: %s", error.c_str());
-    return false;
-  }
-
-  storedTrialToken = cleaned;
-  trialTotalSec = seconds;
-  trialUsedSec = 0;
-  unsavedSec = 0;
-  prefs.putUInt("used", 0);
-  state = LicenseState::Trial;
-  lastTickMs = millis();
-
-  webLog("[LIC] Trial claimed: %lu seconds", static_cast<unsigned long>(seconds));
-  return true;
-}
-#endif
-
 LicenseState licenseGetState() { return state; }
 
 bool licenseIsLocked() {
@@ -437,8 +340,6 @@ uint32_t licenseTrialTotalSec() { return trialTotalSec; }
 const String &licenseDeviceId() { return deviceId; }
 
 bool licenseHasStoredKey() { return storedKey.length() > 0; }
-
-bool licenseHasTrialToken() { return storedTrialToken.length() > 0; }
 
 const char *licenseStateName() {
   switch (state) {
