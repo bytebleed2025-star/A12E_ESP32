@@ -263,10 +263,7 @@ static uint32_t remainingTrialSec() {
 
 static void refreshState() {
   if (state == LicenseState::Licensed) return;
-  if (storedTrialToken.length() == 0) {
-    state = LicenseState::Unclaimed;
-    return;
-  }
+  // Silent local trial: starts automatically on first boot, no token claim.
   state = (trialUsedSec >= trialTotalSec) ? LicenseState::Expired
                                           : LicenseState::Trial;
 }
@@ -304,28 +301,13 @@ void licenseBegin() {
   storedKey = prefs.getString("key", "");
   storedTrialToken = prefs.getString("trial", "");
   trialTotalSec = LICENSE_TRIAL_SECONDS;
-  state = LicenseState::Unclaimed;
+  state = LicenseState::Trial;
 
   if (storedKey.length() > 0) {
     if (verifyKey(storedKey)) {
       state = LicenseState::Licensed;
     } else {
       webLog("[LIC] Stored key is not valid for this device - ignored");
-    }
-  }
-
-  if (state != LicenseState::Licensed && storedTrialToken.length() > 0) {
-    uint32_t seconds = 0;
-    String error;
-    if (verifyTrialToken(storedTrialToken, seconds, &error)) {
-      trialTotalSec = seconds;
-      if (trialUsedSec > trialTotalSec) trialUsedSec = trialTotalSec;
-      refreshState();
-    } else {
-      webLog("[LIC] Stored trial token invalid: %s", error.c_str());
-      storedTrialToken = "";
-      prefs.remove("trial");
-      state = LicenseState::Unclaimed;
     }
   }
 
@@ -339,15 +321,15 @@ void licenseBegin() {
       webLog("[LIC] Status: LICENSED");
       break;
     case LicenseState::Expired:
-      webLog("[LIC] Status: TRIAL EXPIRED - activation required");
+      webLog("[LIC] Status: TRIAL ENDED - activation required");
       break;
     case LicenseState::Trial:
-      webLog("[LIC] Status: TRIAL, %luh %lum remaining",
+      webLog("[LIC] Status: ACTIVE, %luh %lum remaining",
              remainingTrialSec() / 3600UL,
              (remainingTrialSec() % 3600UL) / 60UL);
       break;
     default:
-      webLog("[LIC] Status: TRIAL NOT CLAIMED - claim required");
+      webLog("[LIC] Status: ACTIVE");
       break;
   }
 }
@@ -369,7 +351,7 @@ void licenseLoop() {
     trialUsedSec = trialTotalSec;
     state = LicenseState::Expired;
     persistTrial(true);
-    webLog("[LIC] Trial expired - monitor locked");
+    webLog("[LIC] TRIAL ENDED - monitor locked");
   } else {
     persistTrial(false);
   }
@@ -397,6 +379,14 @@ bool licenseActivate(const String &key, String &error) {
 }
 
 bool licenseClaimTrial(const String &token, String &error) {
+  // Tokens are no longer used: every device gets an automatic silent 6 h trial.
+  (void)token;
+  error = "Trial tokens are no longer used";
+  return false;
+}
+
+#if 0
+bool licenseClaimTrialLegacy(const String &token, String &error) {
   if (state == LicenseState::Licensed) {
     error = "Device is already licensed";
     return false;
@@ -432,6 +422,7 @@ bool licenseClaimTrial(const String &token, String &error) {
   webLog("[LIC] Trial claimed: %lu seconds", static_cast<unsigned long>(seconds));
   return true;
 }
+#endif
 
 LicenseState licenseGetState() { return state; }
 

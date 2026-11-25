@@ -16,12 +16,12 @@
 #define LICENSE_PRODUCT_CODE "A12E1"
 #define LICENSE_DEVICE_PREFIX "A12E-"
 
-// Trial length. The trial counts POWERED-ON time (the ESP32 has no battery
-// backed clock), so 3 h = 3 hours of actual use.
+// Silent trial length. The trial counts POWERED-ON time (the ESP32 has no
+// battery-backed clock), so 6 h = 6 hours of actual use.
 //
-// Customer trial build: 3 hours. For production use 24 h:
-//   #define LICENSE_TRIAL_SECONDS (24UL * 60UL * 60UL)
-#define LICENSE_TRIAL_SECONDS (3UL * 60UL * 60UL)
+// No trial UI is shown while the timer runs. When it expires the monitor shows
+// "TRIAL ENDED" and requires an activation key.
+#define LICENSE_TRIAL_SECONDS (6UL * 60UL * 60UL)
 #define LICENSE_TRIAL_CODE "TRIAL1"
 #define LICENSE_MAX_TRIAL_SECONDS (7UL * 24UL * 60UL * 60UL)
 
@@ -33,9 +33,9 @@
 #define LICENSE_SAVE_INTERVAL_SEC 15UL
 
 #define LICENSE_ACTIVATION_URL \
-  "https://a12e-license.esp32dev-by-shd.workers.dev/activate"
+  "https://a12e-license.esp32dev-by-shd.workers.dev/a12escales"
 #define LICENSE_TRIAL_URL \
-  "https://a12e-license.esp32dev-by-shd.workers.dev/trial"
+  "https://a12e-license.esp32dev-by-shd.workers.dev/a12escales/trial"
 
 // Public key used to verify activation keys (ECDSA P-256, SHA-256).
 // This is the PUBLIC half only - safe to ship inside the .bin.

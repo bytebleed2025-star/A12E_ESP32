@@ -331,27 +331,6 @@ static void handleActivate() {
   server.send(code, "application/json", body);
 }
 
-static void handleTrialClaim() {
-  String body = F("{\"ok\":false,\"error\":\"Missing token\"}");
-  int code = 400;
-
-  if (server.hasArg("token")) {
-    String error;
-    if (licenseClaimTrial(server.arg("token"), error)) {
-      body = F("{\"ok\":true}");
-      code = 200;
-    } else {
-      body = F("{\"ok\":false,\"error\":\"");
-      appendJsonEscaped(body, error.c_str());
-      body += F("\"}");
-      code = 403;
-    }
-  }
-
-  server.sendHeader("Cache-Control", "no-store");
-  server.send(code, "application/json", body);
-}
-
 static bool isConfigRequest() {
   return isApClient() && server.header("X-Requested-With") == "A12E";
 }
@@ -536,7 +515,6 @@ void setup() {
   server.on("/api/log", HTTP_GET, handleLog);
   server.on("/api/activate", HTTP_GET, handleActivate);
   server.on("/api/activate", HTTP_POST, handleActivate);
-  server.on("/api/trial-claim", HTTP_POST, handleTrialClaim);
   server.on("/api/settings", HTTP_GET, handleSettingsGet);
   server.on("/api/settings", HTTP_POST, handleSettingsPost);
   server.on("/api/wifi/scan", HTTP_POST, handleScan);
