@@ -1,9 +1,0 @@
-# Private signing key - NEVER commit or ship this file
-tools/license_private.pem
-
-# Router / Google Sheets credentials
-include/sta_secrets.h
-
-# Local keypair backup / generated licenses
-tools/*.key
-tools/licenses.txt
